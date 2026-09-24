@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mentor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentor}
+      POSTGRES_DB: ${POSTGRES_DB:-mentor}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mentor} -d ${POSTGRES_DB:-mentor}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-mentor}:${POSTGRES_PASSWORD:-mentor}@db:5432/${POSTGRES_DB:-mentor}
+      CORS_ORIGINS: http://localhost:4200
+    command: >
+      sh -c "alembic -c /srv/db/alembic.ini upgrade head &&
+             python -m app.seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./services/api/app:/srv/services/api/app
+      - ./db:/srv/db
+    ports:
+      - "8000:8000"
+
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    depends_on:
+      - api
+    command: sh -c "npm install && npm start -- --host 0.0.0.0 --proxy-config proxy.conf.docker.json"
+    volumes:
+      - ./apps/web:/app
+      - web-node-modules:/app/node_modules
+    ports:
+      - "4200:4200"
+
+volumes:
+  db-data:
+  web-node-modules:

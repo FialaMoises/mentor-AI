@@ -1,0 +1,28 @@
+# segredos
+.env
+*.env
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# node / angular
+node_modules/
+dist/
+.angular/
+coverage/
+
+# banco local e temporários
+*.db
+*.sqlite3
+.DS_Store
+Thumbs.db

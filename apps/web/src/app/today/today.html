@@ -1,0 +1,42 @@
+@if (loading()) {
+  <p class="muted">Carregando a lista de hoje…</p>
+} @else if (plan(); as day) {
+  <section class="head">
+    <h1>Hoje</h1>
+    <p class="muted">
+      {{ done() }} de {{ total() }} · {{ day.capacity_minutes }} min disponíveis
+      @if (day.light) {
+        · dia leve
+      }
+    </p>
+  </section>
+
+  @if (error()) {
+    <p class="alert">{{ error() }}</p>
+  }
+
+  <ul class="tasks">
+    @for (task of day.tasks; track task.id) {
+      <li class="task" [class.is-done]="task.status === 'feita'" [class.is-skipped]="task.status === 'nao_deu'">
+        <div class="task-main">
+          <span class="kind">{{ task.kind }}</span>
+          <span class="topic">{{ task.topic }}</span>
+          <span class="muted">{{ task.minutes }} min</span>
+        </div>
+        <div class="task-actions">
+          <button type="button" (click)="mark(task, 'feita')" [disabled]="task.status === 'feita'">
+            Feito
+          </button>
+          <button type="button" class="ghost" (click)="mark(task, 'nao_deu')" [disabled]="task.status === 'nao_deu'">
+            Não deu
+          </button>
+        </div>
+      </li>
+    } @empty {
+      <li class="muted">Nada planejado para hoje.</li>
+    }
+  </ul>
+} @else {
+  <p class="alert">{{ error() }}</p>
+  <button type="button" (click)="load()">Tentar de novo</button>
+}

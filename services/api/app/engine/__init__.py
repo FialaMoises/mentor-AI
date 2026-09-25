@@ -6,6 +6,13 @@ camada de fora.
 """
 
 from .planner import fill_day, plan_horizon, restart_capacities
+from .routine import (
+    LONG_SHIFT_MINUTES,
+    Commitment,
+    busy_minutes,
+    capacities_from_commitments,
+    daily_budget,
+)
 from .scoring import priority, proficiency, urgency
 from .types import (
     KIND_ORDER,
@@ -23,8 +30,10 @@ from .types import (
 
 __all__ = [
     "KIND_ORDER",
+    "LONG_SHIFT_MINUTES",
     "LIGHT_DAY_KINDS",
     "Candidate",
+    "Commitment",
     "DayCapacity",
     "EngineParams",
     "HorizonPlan",
@@ -33,6 +42,9 @@ __all__ = [
     "StudyMode",
     "TaskKind",
     "TopicState",
+    "busy_minutes",
+    "capacities_from_commitments",
+    "daily_budget",
     "fill_day",
     "plan_horizon",
     "priority",

@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import router
+from .api import routers
 from .config import get_settings
 
 settings = get_settings()
@@ -18,7 +18,8 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-app.include_router(router)
+for router in routers:
+    app.include_router(router)
 
 
 @app.get("/health")

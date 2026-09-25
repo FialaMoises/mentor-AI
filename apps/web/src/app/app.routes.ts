@@ -6,5 +6,9 @@ export const routes: Routes = [
     path: 'hoje',
     loadComponent: () => import('./today/today').then((m) => m.Today),
   },
+  {
+    path: 'comecar',
+    loadComponent: () => import('./onboarding/onboarding').then((m) => m.Onboarding),
+  },
   { path: '**', redirectTo: 'hoje' },
 ];

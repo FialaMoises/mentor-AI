@@ -1,0 +1,117 @@
+.passos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1.25rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.passos .atual {
+  color: var(--fg);
+  font-weight: 650;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 1.75rem 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.alert {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--alert-bg);
+  color: var(--alert-fg);
+}
+
+.campo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+  flex-wrap: wrap;
+}
+
+.campo > span {
+  min-width: 13rem;
+}
+
+.campo.nota input[type='range'] {
+  flex: 1;
+  min-width: 8rem;
+}
+
+input,
+select {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+}
+
+ul {
+  padding-left: 1.1rem;
+}
+
+.compromissos {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.compromissos li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+
+.compromissos strong {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.compromissos input[type='number'] {
+  width: 5.5rem;
+}
+
+button {
+  font: inherit;
+  margin-top: 1rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+}
+
+button.ghost {
+  margin: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

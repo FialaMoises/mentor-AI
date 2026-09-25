@@ -24,6 +24,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+TOPIC_LEVEL_AREA = 1
+TOPIC_LEVEL_TEMA = 2
+TOPIC_LEVEL_SUBTEMA = 3
+
 TASK_KINDS = ("teoria", "questoes", "revisao", "simulado")
 TASK_STATUSES = ("pendente", "feita", "nao_deu")
 PROGRESS_ACTIONS = ("feita", "nao_deu")
@@ -65,22 +69,68 @@ class TargetExam(Base):
         ForeignKey("student.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(120))
+    exam_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("exam.id", ondelete="SET NULL"), nullable=True
+    )
     exam_date: Mapped[date] = mapped_column(Date)
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class Topic(Base):
-    """Tema da base canônica, igual para todos os alunos."""
+    """Tema da base canônica, igual para todos os alunos.
+
+    Árvore de três níveis: área (1) → tema (2) → subtema (3). O `slug` é a
+    identidade estável entre o catálogo versionado e o banco.
+    """
 
     __tablename__ = "topic"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
+    slug: Mapped[str] = mapped_column(String(160), unique=True, index=True)
     area: Mapped[str] = mapped_column(String(80))
     name: Mapped[str] = mapped_column(String(160))
+    level: Mapped[int] = mapped_column(Integer, default=TOPIC_LEVEL_SUBTEMA)
+    position: Mapped[int] = mapped_column(Integer, default=0)
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("topic.id", ondelete="SET NULL"), nullable=True
     )
-    incidence: Mapped[float] = mapped_column(Float, default=1.0)
+
+    __table_args__ = (CheckConstraint("level between 1 and 3", name="ck_topic_level"),)
+
+
+class Exam(Base):
+    """Prova cujo peso por tema o motor usa (ENAMED, ENARE, provas estaduais)."""
+
+    __tablename__ = "exam"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    slug: Mapped[str] = mapped_column(String(60), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    authority: Mapped[str] = mapped_column(String(160), default="")
+    notes: Mapped[str] = mapped_column(String(600), default="")
+
+
+class TopicIncidence(Base):
+    """IncidenciaTema: quanto um subtema pesa numa prova, e de onde veio esse peso.
+
+    `source` nunca fica vazio: um peso sem origem registrada não entra na base.
+    """
+
+    __tablename__ = "topic_incidence"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    topic_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("topic.id", ondelete="CASCADE"))
+    exam_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("exam.id", ondelete="CASCADE"))
+    weight: Mapped[float] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(400))
+    checked_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    topic: Mapped[Topic] = relationship(lazy="joined")
+
+    __table_args__ = (
+        UniqueConstraint("topic_id", "exam_id", name="uq_incidence_topic_exam"),
+        CheckConstraint("weight > 0 and weight <= 1", name="ck_incidence_weight"),
+    )
 
 
 class Proficiency(Base):

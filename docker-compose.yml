@@ -5,8 +5,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-mentor}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentor}
       POSTGRES_DB: ${POSTGRES_DB:-mentor}
-    ports:
-      - "5432:5432"
+    # Sem porta publicada: a API fala com o db pela rede do compose. Para plugar um
+    # cliente de banco, descomente e escolha uma porta livre no host.
+    # ports:
+    #   - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -27,6 +29,7 @@ services:
       CORS_ORIGINS: http://localhost:4200
     command: >
       sh -c "alembic -c /srv/db/alembic.ini upgrade head &&
+             python -m app.catalog &&
              python -m app.seed &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:

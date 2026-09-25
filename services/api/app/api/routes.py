@@ -16,10 +16,70 @@ from sqlalchemy.orm import Session
 
 from ..clock import today_in
 from ..db import get_session
-from ..models import DailyCapacity, Proficiency, ProgressEvent, Student, Task
-from ..schemas import DayPlanOut, PlanTaskOut, ProgressIn
+from ..models import (
+    TOPIC_LEVEL_AREA,
+    TOPIC_LEVEL_SUBTEMA,
+    TOPIC_LEVEL_TEMA,
+    DailyCapacity,
+    Exam,
+    Proficiency,
+    ProgressEvent,
+    Student,
+    Task,
+    Topic,
+    TopicIncidence,
+)
+from ..schemas import AreaOut, CatalogOut, DayPlanOut, PlanTaskOut, ProgressIn, SubtemaOut, TemaOut
 
 router = APIRouter(prefix="/api/v1")
+
+
+@router.get("/catalog/{exam_slug}", response_model=CatalogOut)
+def read_catalog(exam_slug: str, session: Annotated[Session, Depends(get_session)]) -> CatalogOut:
+    """A base canônica como o aluno vai vê-la na autoavaliação: árvore e pesos."""
+    exam = session.scalar(select(Exam).where(Exam.slug == exam_slug))
+    if exam is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "prova não encontrada")
+
+    topics = list(session.scalars(select(Topic).order_by(Topic.level, Topic.position, Topic.name)))
+    incidences = {
+        row.topic_id: row
+        for row in session.scalars(select(TopicIncidence).where(TopicIncidence.exam_id == exam.id))
+    }
+
+    filhos: dict[uuid.UUID, list[Topic]] = {}
+    for topic in topics:
+        if topic.parent_id is not None:
+            filhos.setdefault(topic.parent_id, []).append(topic)
+
+    fonte = next((row.source for row in incidences.values()), "")
+    areas = [
+        AreaOut(
+            slug=area.slug,
+            name=area.name,
+            temas=[
+                TemaOut(
+                    slug=tema.slug,
+                    name=tema.name,
+                    subtemas=[
+                        SubtemaOut(
+                            slug=sub.slug,
+                            name=sub.name,
+                            incidence=incidences[sub.id].weight if sub.id in incidences else 0.0,
+                        )
+                        for sub in filhos.get(tema.id, [])
+                        if sub.level == TOPIC_LEVEL_SUBTEMA
+                    ],
+                )
+                for tema in filhos.get(area.id, [])
+                if tema.level == TOPIC_LEVEL_TEMA
+            ],
+        )
+        for area in topics
+        if area.level == TOPIC_LEVEL_AREA
+    ]
+
+    return CatalogOut(exam=exam.slug, exam_name=exam.name, weights_source=fonte, areas=areas)
 
 
 def resolve_student(student_id: uuid.UUID, session: Session) -> Student:

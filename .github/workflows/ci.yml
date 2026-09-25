@@ -58,6 +58,12 @@ jobs:
           DATABASE_URL: postgresql+psycopg://mentor:mentor@localhost:5432/mentor
         run: alembic -c db/alembic.ini upgrade head
 
+      - name: Base canônica carrega em banco limpo
+        working-directory: services/api
+        env:
+          DATABASE_URL: postgresql+psycopg://mentor:mentor@localhost:5432/mentor
+        run: python -m app.catalog
+
       - name: Seed roda no banco migrado
         working-directory: services/api
         env:

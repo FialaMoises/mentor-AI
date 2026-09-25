@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Protocol
+
+logger = logging.getLogger("mentor.notifications")
 
 
 class SubscriptionExpired(RuntimeError):
@@ -37,7 +40,7 @@ class EmailSender(Protocol):
 
 
 class NullPushSender(PushSender):
-    """Quando não há chave VAPID configurada: registra e segue a vida."""
+    """Sem chave VAPID: registra a intenção, não envia, e segue a vida."""
 
     def __init__(self) -> None:
         self.sent: list[tuple[PushTarget, Message]] = []
@@ -47,8 +50,24 @@ class NullPushSender(PushSender):
 
 
 class NullEmailSender(EmailSender):
-    def __init__(self) -> None:
+    """Sem SMTP: a mensagem vai para o log, com a URL inteira.
+
+    É o que torna o desenvolvimento possível — o link mágico de entrada aparece
+    em `docker compose logs api`. Em produção, configure o SMTP: com ele, esta
+    classe não é usada e nenhum link de entrada chega perto de um arquivo de log.
+    """
+
+    def __init__(self, echo: bool = True) -> None:
         self.sent: list[tuple[str, Message]] = []
+        self.echo = echo
 
     def send(self, to: str, message: Message) -> None:
         self.sent.append((to, message))
+        if self.echo:
+            logger.warning(
+                "SMTP não configurado — e-mail para %s não foi enviado.\n  %s\n  %s\n  %s",
+                to,
+                message.title,
+                message.body,
+                message.url,
+            )

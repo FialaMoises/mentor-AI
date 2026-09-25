@@ -239,3 +239,21 @@ def test_webpush_envia_o_payload_com_titulo_e_corpo() -> None:
         "keys": {"p256dh": "p", "auth": "a"},
     }
     assert "Oi" in str(enviados[0]["data"])
+
+
+def test_sem_smtp_a_mensagem_vai_para_o_log(caplog: pytest.LogCaptureFixture) -> None:
+    remetente = NullEmailSender()
+
+    with caplog.at_level("WARNING", logger="mentor.notifications"):
+        remetente.send("aluno@exemplo.com", Message(title="Entrar", body="oi", url="https://x/y"))
+
+    assert "https://x/y" in caplog.text
+    assert remetente.sent[0][0] == "aluno@exemplo.com"
+
+
+def test_o_dible_pode_ficar_calado() -> None:
+    remetente = NullEmailSender(echo=False)
+
+    remetente.send("aluno@exemplo.com", Message(title="Entrar", body="oi"))
+
+    assert len(remetente.sent) == 1

@@ -79,6 +79,37 @@ desenvolvimento roda sem depender de serviço externo. No iPhone, o push só
 funciona com o app instalado na tela de início; a tela `/avisos` explica o
 caminho e cai para e-mail quando não há assinatura viva.
 
+## Como testar do zero
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+O aluno de exemplo já vem semeado, com plano até a prova. Para entrar como ele:
+
+```powershell
+curl.exe -X POST http://localhost:8000/api/v1/auth/magic-link ^
+  -H "content-type: application/json" ^
+  -d "{\"email\": \"aluno.exemplo@mentor-ai.app\"}"
+
+docker compose logs api --tail 20
+```
+
+Sem SMTP configurado, o link aparece no log da API. Abra-o no navegador: ele
+entra e leva direto para a lista de hoje.
+
+Para testar o cadastro de um aluno novo, peça o link para um e-mail qualquer
+(`voce@exemplo.com`), pegue no log e siga o fluxo: questionário, aviso de
+privacidade, upload da rotina, conferência da semana.
+
+Sem `ANTHROPIC_API_KEY`, a extração usa o dublê e devolve rotina vazia — dá para
+conferir a tela, não a leitura do arquivo. Com a chave no `.env` e um `docker
+compose up -d` depois, o upload passa a ler o arquivo de verdade.
+
+Para o painel do piloto, ponha `ADMIN_TOKEN` no `.env`, suba de novo e abra
+http://localhost:4200/admin.
+
 ## Entrar, assinar e acompanhar o piloto
 
 A entrada é por link mágico: o aluno digita o e-mail e recebe um link de 20

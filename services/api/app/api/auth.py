@@ -79,7 +79,7 @@ def post_magic_link(
         str(payload.email),
         Message(
             title="Seu link de entrada no mentor-AI",
-            body="O link vale por 20 minutos e serve uma vez só.",
+            body="Toque no link abaixo. Vale por 20 minutos e serve uma vez só.",
             url=link.url(settings.app_base_url),
         ),
     )

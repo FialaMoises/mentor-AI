@@ -10,10 +10,11 @@ from sqlalchemy.pool import StaticPool
 
 from app.auth import request_login, verify_login
 from app.db import get_session
-from app.deps import get_extraction_provider, get_object_store
+from app.deps import get_extraction_provider, get_object_store, get_senders
 from app.extraction import FakeExtractor
 from app.main import app
 from app.models import Base, Student
+from app.notifications import NullEmailSender, NullPushSender, Senders
 from app.storage import InMemoryStore
 
 
@@ -59,6 +60,9 @@ def client(
     app.dependency_overrides[get_session] = override
     app.dependency_overrides[get_object_store] = lambda: api_store
     app.dependency_overrides[get_extraction_provider] = lambda: api_provider
+    app.dependency_overrides[get_senders] = lambda: Senders(
+        push=NullPushSender(), email=NullEmailSender(echo=False)
+    )
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()

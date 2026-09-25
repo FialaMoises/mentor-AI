@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { DayPlan, PlanTask, TaskStatus } from '../core/models';
 import { OfflineQueue } from '../core/offline-queue';
 import { PlanApi } from '../core/plan-api';
-import { Session } from '../core/session';
 
 @Component({
   selector: 'app-today',
@@ -14,7 +13,6 @@ import { Session } from '../core/session';
 })
 export class Today implements OnDestroy {
   private readonly api = inject(PlanApi);
-  private readonly session = inject(Session);
   private readonly fila = inject(OfflineQueue);
 
   protected readonly plan = signal<DayPlan | null>(null);
@@ -54,7 +52,7 @@ export class Today implements OnDestroy {
   protected load(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.api.today(this.session.studentId).subscribe({
+    this.api.today().subscribe({
       next: (plan) => {
         this.plan.set(plan);
         this.loading.set(false);
@@ -128,7 +126,7 @@ export class Today implements OnDestroy {
     const fila = this.fila.todas();
     if (!fila.length) return;
 
-    this.api.sync(this.session.studentId, fila).subscribe({
+    this.api.sync(fila).subscribe({
       next: () => {
         this.fila.remover(fila.map((m) => m.client_event_id));
         this.load();

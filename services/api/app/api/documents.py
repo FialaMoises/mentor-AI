@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..clock import today_in
 from ..db import get_session
-from ..deps import get_extraction_provider, get_object_store
+from ..deps import current_student, get_extraction_provider, get_object_store
 from ..documents import ConsentMissing, DocumentError, confirm, erase, extract, upload
 from ..extraction import ExtractionProvider, RoutineExtraction
 from ..models import Document, Student
@@ -59,20 +59,21 @@ def _to_out(document: Document) -> DocumentOut:
     )
 
 
-def _document_of(document_id: uuid.UUID, session: Session) -> Document:
+def _document_of(document_id: uuid.UUID, session: Session, student: Student) -> Document:
+    """Documento de outro aluno responde 404: nem confirma que existe."""
     documento = session.get(Document, document_id)
-    if documento is None:
+    if documento is None or documento.student_id != student.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "documento não encontrado")
     return documento
 
 
 @router.post(
-    "/students/{student_id}/documents",
+    "/me/documents",
     response_model=DocumentOut,
     status_code=status.HTTP_201_CREATED,
 )
 async def post_document(
-    student_id: uuid.UUID,
+    aluno: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
     store: Annotated[ObjectStore, Depends(get_object_store)],
     provider: Annotated[ExtractionProvider, Depends(get_extraction_provider)],
@@ -80,10 +81,6 @@ async def post_document(
     kind: Annotated[DocumentKind, Form()] = "grade",
 ) -> DocumentOut:
     """Recebe o arquivo, guarda o original e já tenta extrair a rotina."""
-    aluno = session.get(Student, student_id)
-    if aluno is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "aluno não encontrado")
-
     conteudo = await file.read(MAX_UPLOAD_BYTES + 1)
     try:
         documento = upload(
@@ -106,23 +103,22 @@ async def post_document(
 
 @router.get("/documents/{document_id}", response_model=DocumentOut)
 def get_document(
-    document_id: uuid.UUID, session: Annotated[Session, Depends(get_session)]
+    document_id: uuid.UUID,
+    student: Annotated[Student, Depends(current_student)],
+    session: Annotated[Session, Depends(get_session)],
 ) -> DocumentOut:
-    return _to_out(_document_of(document_id, session))
+    return _to_out(_document_of(document_id, session, student))
 
 
 @router.post("/documents/{document_id}/confirm", response_model=ConfirmOut)
 def post_confirm(
     document_id: uuid.UUID,
     payload: RoutineExtraction,
+    aluno: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
 ) -> ConfirmOut:
     """A semana que o aluno conferiu — com as correções dele — vira rotina oficial."""
-    documento = _document_of(document_id, session)
-    aluno = session.get(Student, documento.student_id)
-    if aluno is None:  # pragma: no cover - FK garante
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "aluno não encontrado")
-
+    documento = _document_of(document_id, session, aluno)
     try:
         resultado = confirm(session, documento, extraction=payload, today=today_in(aluno.timezone))
     except DocumentError as erro:
@@ -139,8 +135,9 @@ def post_confirm(
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(
     document_id: uuid.UUID,
+    student: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
     store: Annotated[ObjectStore, Depends(get_object_store)],
 ) -> None:
     """Exclusão a pedido do aluno: o arquivo e o registro somem."""
-    erase(session, _document_of(document_id, session), store)
+    erase(session, _document_of(document_id, session, student), store)

@@ -1,0 +1,26 @@
+<h1>Entrar</h1>
+
+@if (erro()) {
+  <p class="alert">{{ erro() }}</p>
+}
+
+@switch (estado()) {
+  @case ('pedindo') {
+    <p class="muted">Sem senha. Você recebe um link por e-mail e entra por ele.</p>
+    <label class="campo">
+      <span>Seu e-mail</span>
+      <input type="email" autocomplete="email" [(ngModel)]="email" name="email" />
+    </label>
+    <button type="button" (click)="pedirLink()">Me manda o link</button>
+  }
+  @case ('enviado') {
+    <p>Se esse e-mail estiver cadastrado, o link já está a caminho.</p>
+    <p class="muted">Ele vale por 20 minutos e serve uma vez só.</p>
+  }
+  @case ('entrando') {
+    <p class="muted">Entrando…</p>
+  }
+  @case ('erro') {
+    <button type="button" (click)="estado.set('pedindo')">Pedir outro link</button>
+  }
+}

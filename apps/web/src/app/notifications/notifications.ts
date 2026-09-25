@@ -2,7 +2,6 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { SwPush } from '@angular/service-worker';
 
 import { PlanApi } from '../core/plan-api';
-import { Session } from '../core/session';
 
 type Estado = 'carregando' | 'indisponivel' | 'precisa_instalar' | 'pronto' | 'assinado' | 'negado';
 
@@ -13,7 +12,6 @@ type Estado = 'carregando' | 'indisponivel' | 'precisa_instalar' | 'pronto' | 'a
 })
 export class Notifications {
   private readonly api = inject(PlanApi);
-  private readonly session = inject(Session);
   private readonly push = inject(SwPush);
 
   protected readonly estado = signal<Estado>('carregando');
@@ -50,7 +48,7 @@ export class Notifications {
     this.push
       .requestSubscription({ serverPublicKey: this.chavePublica() })
       .then((assinatura) => {
-        this.api.assinarPush(this.session.studentId, assinatura.toJSON()).subscribe({
+        this.api.assinarPush(assinatura.toJSON()).subscribe({
           next: () => this.estado.set('assinado'),
           error: () => this.erro.set('Assinei aqui, mas o servidor recusou. Tente de novo.'),
         });

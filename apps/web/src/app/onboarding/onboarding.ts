@@ -9,7 +9,6 @@ import {
   OnboardingApi,
   RotinaExtraida,
 } from '../core/onboarding-api';
-import { Session } from '../core/session';
 
 type Passo = 'questionario' | 'aviso' | 'upload' | 'conferencia' | 'pronto';
 
@@ -23,7 +22,6 @@ const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domi
 })
 export class Onboarding {
   private readonly api = inject(OnboardingApi);
-  private readonly session = inject(Session);
   private readonly router = inject(Router);
 
   protected readonly dias = DIAS;
@@ -76,7 +74,7 @@ export class Onboarding {
     this.ocupado.set(true);
     this.erro.set(null);
     this.api
-      .criarAluno({
+      .salvarPerfil({
         phase: this.fase,
         mode: this.modo,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Fortaleza',
@@ -87,7 +85,6 @@ export class Onboarding {
       .subscribe({
         next: (aluno) => {
           this.alunoId.set(aluno.id);
-          this.session.studentId = aluno.id;
           this.ocupado.set(false);
           this.passo.set('aviso');
         },
@@ -99,10 +96,8 @@ export class Onboarding {
   }
 
   protected aceitarAviso(): void {
-    const id = this.alunoId();
-    if (!id) return;
     this.ocupado.set(true);
-    this.api.aceitarAviso(id).subscribe({
+    this.api.aceitarAviso().subscribe({
       next: () => {
         this.ocupado.set(false);
         this.passo.set('upload');
@@ -117,12 +112,11 @@ export class Onboarding {
   protected escolherArquivo(evento: Event): void {
     const entrada = evento.target as HTMLInputElement;
     const arquivo = entrada.files?.[0];
-    const id = this.alunoId();
-    if (!arquivo || !id) return;
+    if (!arquivo) return;
 
     this.ocupado.set(true);
     this.erro.set(null);
-    this.api.enviarArquivo(id, arquivo, this.tipoArquivo).subscribe({
+    this.api.enviarArquivo(arquivo, this.tipoArquivo).subscribe({
       next: (documento) => {
         this.ocupado.set(false);
         this.documento.set(documento);

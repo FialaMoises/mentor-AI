@@ -8,11 +8,12 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.auth import request_login, verify_login
 from app.db import get_session
 from app.deps import get_extraction_provider, get_object_store
 from app.extraction import FakeExtractor
 from app.main import app
-from app.models import Base
+from app.models import Base, Student
 from app.storage import InMemoryStore
 
 
@@ -61,3 +62,19 @@ def client(
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def login(session: Session):  # type: ignore[no-untyped-def]
+    """Devolve o cabeçalho de sessão de um aluno, passando pelo link mágico de verdade."""
+
+    def _login(student: Student) -> dict[str, str]:
+        if not student.email:
+            student.email = f"{student.id}@exemplo.com"
+            session.flush()
+        link = request_login(session, student.email)
+        entrada = verify_login(session, link.token)
+        session.flush()
+        return {"Authorization": f"Bearer {entrada.token}"}
+
+    return _login

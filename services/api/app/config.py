@@ -40,6 +40,17 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     email_from: str = "mentor-AI <nao-responda@mentor-ai.app>"
 
+    # Cobrança. Sem provedor configurado, o gateway de mentira roda o fluxo inteiro.
+    billing_webhook_secret: str = ""
+    price_monthly_cents: int = 4900
+    price_annual_cents: int = 47000
+
+    # Painel do piloto. Sem token, o painel não abre para ninguém.
+    admin_token: str = ""
+
+    # Base do link mágico enviado por e-mail.
+    app_base_url: str = "http://localhost:4200"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

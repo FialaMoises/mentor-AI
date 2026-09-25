@@ -1,10 +1,13 @@
 <header class="topbar">
   <span class="brand">mentor-AI</span>
-  <nav>
-    <a routerLink="/hoje" routerLinkActive="atual">Hoje</a>
-    <a routerLink="/comecar" routerLinkActive="atual">Minha rotina</a>
-    <a routerLink="/avisos" routerLinkActive="atual">Avisos</a>
-  </nav>
+  @if (autenticado()) {
+    <nav>
+      <a routerLink="/hoje" routerLinkActive="atual">Hoje</a>
+      <a routerLink="/comecar" routerLinkActive="atual">Minha rotina</a>
+      <a routerLink="/avisos" routerLinkActive="atual">Avisos</a>
+      <a routerLink="/conta" routerLinkActive="atual">Conta</a>
+    </nav>
+  }
 </header>
 
 <main class="shell">

@@ -6,18 +6,15 @@ de estudos para a residência, com replanejamento automático.
 A especificação do produto é a fonte da verdade:
 [Mentoria autodidata para residência — v0.1](https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f)
 
-## Estado atual — fase 4
+## Estado atual — fase 5
 
-O ciclo diário fecha: o aluno abre a lista, marca feito com dois toques (o
-segundo lança quantas questões acertou), e a marcação feita sem sinal fica numa
-fila que sobe sozinha quando a internet volta — reenviar a fila inteira não
-duplica nada. As notificações saem por Web Push, com e-mail de reserva para
-quem não tem push.
+O produto está inteiro para o piloto: o aluno entra por link mágico, responde o
+questionário, sobe a rotina, recebe o plano até a prova, marca a lista do dia
+(inclusive offline) e administra a própria assinatura — com o botão de pausar
+ao lado do de cancelar. O painel em `/admin` mostra os números do piloto.
 
-Antes disso: o aluno responde o questionário, aceita o aviso de privacidade,
-sobe a grade ou a escala e confere a semana que a IA leu. O motor monta o
-horizonte até a prova e o job noturno recalcula de amanhã em diante sem tocar
-na lista que ele já abriu.
+Não existe rota com id de aluno na URL: o aluno vem sempre da sessão. Quem pede
+uma tarefa ou um documento de outra pessoa recebe 404.
 
 ```
 apps/web/                 Angular + @angular/pwa
@@ -26,6 +23,9 @@ services/api/             FastAPI, jobs e o motor
 db/migrations/            Alembic
   app/extraction/         LLM lendo a rotina, com a saída validada por schema
   app/documents/          upload, confirmação da semana e expurgo de retenção
+  app/auth/               link mágico e sessões (só hash no banco)
+  app/billing/            assinatura, pausa e webhook, atrás de uma porta
+  app/metrics/            os números do piloto, tirados do histórico
 db/catalog/               base canônica de temas, versionada em YAML
 .claude/agents/           teste, validação, code review e segurança
 ```
@@ -79,6 +79,24 @@ desenvolvimento roda sem depender de serviço externo. No iPhone, o push só
 funciona com o app instalado na tela de início; a tela `/avisos` explica o
 caminho e cai para e-mail quando não há assinatura viva.
 
+## Entrar, assinar e acompanhar o piloto
+
+A entrada é por link mágico: o aluno digita o e-mail e recebe um link de 20
+minutos, de uso único. No banco vivem só os hashes — nem do token de login, nem
+do de sessão dá para voltar ao valor original.
+
+A cobrança fica atrás de uma porta (`app/billing`). Sem provedor real
+configurado, um gateway de mentira roda checkout, pausa, cancelamento e webhook
+de ponta a ponta. Nenhum dado de cartão passa pela aplicação: guardamos só a
+referência que o provedor devolve. O webhook confere a assinatura e é
+idempotente — evento repetido não repete efeito.
+
+O painel do piloto responde em `/admin`, protegido por `ADMIN_TOKEN`:
+
+```bash
+curl.exe -H "x-admin-token: SEU_TOKEN" http://localhost:8000/api/v1/admin/metrics
+```
+
 ## Arquivos do aluno e privacidade
 
 O aluno aceita o aviso antes do primeiro upload — sem consentimento registrado,
@@ -89,6 +107,9 @@ extraído. O aluno pode apagar qualquer documento antes disso.
 Na extração, o conteúdo do arquivo é tratado como dado, nunca como instrução, e
 a resposta do modelo passa por JSON Schema antes de tocar o banco. Sem
 `ANTHROPIC_API_KEY`, a API usa um dublê e não chama serviço externo nenhum.
+
+O aluno baixa tudo o que guardamos dele em `/conta` e pode apagar a conta por
+ali — o que leva junto plano, progresso e arquivos.
 
 PWA:
 

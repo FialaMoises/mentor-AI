@@ -53,6 +53,9 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contato@mentor-ai.app}
       SMTP_HOST: ${SMTP_HOST:-}
+      BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET:-segredo-de-teste}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:4200}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-mentor}:${POSTGRES_PASSWORD:-mentor}@db:5432/${POSTGRES_DB:-mentor}
       CORS_ORIGINS: http://localhost:4200
     command: >

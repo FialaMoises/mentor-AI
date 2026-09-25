@@ -1,0 +1,54 @@
+<h1>Piloto</h1>
+
+@if (erro()) {
+  <p class="alert">{{ erro() }}</p>
+}
+
+<label class="campo">
+  <span>Token do painel</span>
+  <input type="password" [(ngModel)]="token" name="token" />
+  <button type="button" (click)="carregar()">Ver números</button>
+</label>
+
+@if (metricas(); as m) {
+  <section class="numeros">
+    <article>
+      <strong>{{ porcentagem(m.retention_week_three) }}</strong>
+      <span>continuam na semana 3</span>
+      <small>{{ m.active_week_three }} de {{ m.reached_week_three }} que chegaram lá</small>
+    </article>
+    <article>
+      <strong>{{ m.tasks_done_last_week }}</strong>
+      <span>tarefas feitas na semana</span>
+      <small>{{ m.tasks_done_per_active_student | number: '1.0-1' }} por aluno ativo</small>
+    </article>
+    <article>
+      <strong>
+        @if (m.median_minutes_to_first_plan === null) {
+          —
+        } @else {
+          {{ m.median_minutes_to_first_plan | number: '1.0-0' }} min
+        }
+      </strong>
+      <span>até o primeiro plano</span>
+      <small>mediana</small>
+    </article>
+    <article>
+      <strong>{{ porcentagem(m.answer_logging_rate) }}</strong>
+      <span>lançam acertos</span>
+      <small>{{ m.students_logging_answers }} de {{ m.students }} alunos</small>
+    </article>
+  </section>
+
+  <h2>Assinaturas</h2>
+  <ul class="status">
+    @for (linha of statusList(m.by_subscription_status); track linha.nome) {
+      <li>
+        <span>{{ linha.nome }}</span>
+        <strong>{{ linha.total }}</strong>
+      </li>
+    } @empty {
+      <li class="muted">Nenhuma assinatura ainda.</li>
+    }
+  </ul>
+}

@@ -23,24 +23,24 @@ export interface PushConfig {
 export class PlanApi {
   private readonly http = inject(HttpClient);
 
-  today(studentId: string): Observable<DayPlan> {
-    return this.http.get<DayPlan>(`${API}/students/${studentId}/plan/today`);
+  today(): Observable<DayPlan> {
+    return this.http.get<DayPlan>(`${API}/me/plan/today`);
   }
 
   markProgress(taskId: string, input: ProgressInput): Observable<PlanTask> {
     return this.http.post<PlanTask>(`${API}/tasks/${taskId}/progress`, input);
   }
 
-  sync(studentId: string, entries: MarcacaoPendente[]): Observable<SyncResult> {
-    return this.http.post<SyncResult>(`${API}/students/${studentId}/progress/sync`, { entries });
+  sync(entries: MarcacaoPendente[]): Observable<SyncResult> {
+    return this.http.post<SyncResult>(`${API}/me/progress/sync`, { entries });
   }
 
   pushConfig(): Observable<PushConfig> {
     return this.http.get<PushConfig>(`${API}/push/config`);
   }
 
-  assinarPush(studentId: string, assinatura: PushSubscriptionJSON): Observable<unknown> {
-    return this.http.post(`${API}/students/${studentId}/push-subscriptions`, {
+  assinarPush(assinatura: PushSubscriptionJSON): Observable<unknown> {
+    return this.http.post(`${API}/me/push-subscriptions`, {
       endpoint: assinatura.endpoint,
       keys: assinatura.keys,
     });

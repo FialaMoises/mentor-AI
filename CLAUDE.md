@@ -15,6 +15,7 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 - Extração com LLM: `app/extraction/`; upload, confirmação e expurgo: `app/documents/`
 - Arquivos: object store em `app/storage/` (MinIO em dev, S3 em produção)
 - Progresso e fila offline: `app/progress/`; notificações: `app/notifications/`
+- Sessão do aluno: `app/auth/`; assinatura: `app/billing/`; painel: `app/metrics/`
 - Extração: LLM com saída validada por JSON Schema (`services/api/app/extraction/`)
 - Banco: Postgres, migrations com Alembic (`db/migrations/`)
 - Base canônica de temas: YAML versionado em `db/catalog/`, carregado por `python -m app.catalog`
@@ -42,23 +43,27 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 7. **O original tem prazo.** Sai de cena 7 dias depois da confirmação da semana;
    o expurgo apaga o arquivo e mantém o JSON. Exclusão a pedido do aluno apaga
    arquivo e registro.
-8. **Toda consulta é escopada pelo aluno dono do recurso.** Nenhum endpoint
-   confia em id vindo do cliente sem checar a posse.
-9. **Segredos só em variável de ambiente.** `.env.example` versionado, `.env`
+8. **O aluno vem da sessão, nunca da URL.** Não existe rota `/students/{id}`:
+   o token diz quem é. Recurso de outro aluno responde 404, não 403 — nem
+   confirma que existe.
+9. **Segredo não vira linha de banco em claro.** Token de login e de sessão
+   vivem como hash; dado de cartão não passa pela aplicação, só a referência do
+   provedor.
+10. **Segredos só em variável de ambiente.** `.env.example` versionado, `.env`
    nunca.
-10. **Migrations desde o primeiro commit.** Nenhum schema criado à mão.
-11. **O `slug` de um tema é identidade, não rótulo.** Renomear o `name` no
+11. **Migrations desde o primeiro commit.** Nenhum schema criado à mão.
+12. **O `slug` de um tema é identidade, não rótulo.** Renomear o `name` no
    catálogo é seguro; trocar o `slug` cria outro tema e descola o histórico de
    progresso dos alunos.
-12. **Peso sem fonte não entra na base.** Toda incidência carrega `source` e
+13. **Peso sem fonte não entra na base.** Toda incidência carrega `source` e
    `checked_at`; enquanto não houver curadoria de provas anteriores, vale o peso
    uniforme declarado no catálogo.
-13. **Marcação de progresso é idempotente.** Toda marcação carrega um
+14. **Marcação de progresso é idempotente.** Toda marcação carrega um
    `client_event_id` gerado no navegador; a mesma marcação reenviada não vira
    dois eventos. A fila offline depende disso.
-14. **Quem lê o relógio é a borda.** A data entra no motor e no job por
+15. **Quem lê o relógio é a borda.** A data entra no motor e no job por
    argumento — `app/clock.py` é o único lugar que chama `datetime.now`.
-15. **Nada entra na `main` com CI vermelho.**
+16. **Nada entra na `main` com CI vermelho.**
 
 ## Idioma
 

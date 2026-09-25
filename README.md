@@ -81,6 +81,10 @@ caminho e cai para e-mail quando não há assinatura viva.
 
 ## Como testar do zero
 
+O MinIO do compose vem do `quay.io` com tag fixa: a MinIO retirou as imagens
+públicas do Docker Hub. Ele é dependência só de desenvolvimento — em produção o
+object store é S3 de verdade.
+
 ```bash
 cp .env.example .env
 docker compose up -d --build

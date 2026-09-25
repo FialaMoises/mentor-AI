@@ -6,13 +6,18 @@ de estudos para a residência, com replanejamento automático.
 A especificação do produto é a fonte da verdade:
 [Mentoria autodidata para residência — v0.1](https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f)
 
-## Estado atual — fase 3
+## Estado atual — fase 4
 
-O ciclo completo já roda: o aluno responde o questionário, aceita o aviso de
-privacidade, sobe a grade ou a escala, confere a semana que a IA leu e recebe o
-plano até a prova. O motor monta o horizonte inteiro — teoria, questões depois
-da teoria, revisões em 1, 7 e 30 dias, dia leve sem teoria — e o job noturno
-recalcula de amanhã em diante sem tocar na lista que o aluno já abriu.
+O ciclo diário fecha: o aluno abre a lista, marca feito com dois toques (o
+segundo lança quantas questões acertou), e a marcação feita sem sinal fica numa
+fila que sobe sozinha quando a internet volta — reenviar a fila inteira não
+duplica nada. As notificações saem por Web Push, com e-mail de reserva para
+quem não tem push.
+
+Antes disso: o aluno responde o questionário, aceita o aviso de privacidade,
+sobe a grade ou a escala e confere a semana que a IA leu. O motor monta o
+horizonte até a prova e o job noturno recalcula de amanhã em diante sem tocar
+na lista que ele já abriu.
 
 ```
 apps/web/                 Angular + @angular/pwa
@@ -59,8 +64,20 @@ Os dois jobs diários:
 
 ```bash
 python -m app.jobs.nightly     # replaneja de amanhã em diante
+python -m app.jobs.notify      # lista do dia, aviso de estouro, recomeço
 python -m app.jobs.retention   # apaga os originais que passaram do prazo
 ```
+
+## Notificações
+
+```bash
+python -m app.tools.vapid   # gera o par de chaves e imprime as duas linhas do .env
+```
+
+Sem `VAPID_PRIVATE_KEY`, a API registra a intenção e não envia nada — o
+desenvolvimento roda sem depender de serviço externo. No iPhone, o push só
+funciona com o app instalado na tela de início; a tela `/avisos` explica o
+caminho e cai para e-mail quando não há assinatura viva.
 
 ## Arquivos do aluno e privacidade
 

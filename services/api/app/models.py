@@ -53,6 +53,8 @@ class Student(Base):
     timezone: Mapped[str] = mapped_column(String(64), default="America/Fortaleza")
     #: Horas de estudo por semana declaradas no questionário.
     weekly_hours: Mapped[int] = mapped_column(Integer, default=14)
+    #: Reserva para quando o push não estiver disponível (iPhone sem app instalado).
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     subscription_status: Mapped[str] = mapped_column(String(20), default="trial")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -231,8 +233,13 @@ class ProgressEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    #: Id gerado no navegador. A mesma marcação reenviada não vira dois eventos.
+    client_event_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
 
-    __table_args__ = (CheckConstraint(f"action in {PROGRESS_ACTIONS}", name="ck_progress_action"),)
+    __table_args__ = (
+        CheckConstraint(f"action in {PROGRESS_ACTIONS}", name="ck_progress_action"),
+        UniqueConstraint("client_event_id", name="uq_progress_client_event"),
+    )
 
 
 DOCUMENT_KINDS = ("grade", "escala", "cursinho", "outro")
@@ -315,4 +322,51 @@ class Commitment(Base):
         CheckConstraint(f"kind in {COMMITMENT_KINDS}", name="ck_commitment_kind"),
         CheckConstraint("(weekday is null) <> (on_day is null)", name="ck_commitment_recurrence"),
         CheckConstraint("duration_minutes > 0", name="ck_commitment_duration"),
+    )
+
+
+NOTIFICATION_KINDS = ("lista_do_dia", "aviso_de_estouro", "recomeco")
+NOTIFICATION_CHANNELS = ("push", "email")
+
+
+class PushSubscription(Base):
+    """Assinatura Web Push de um navegador do aluno.
+
+    No iPhone, só existe depois que ele instala o app na tela de início.
+    """
+
+    __tablename__ = "push_subscription"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("student.id", ondelete="CASCADE"), index=True
+    )
+    endpoint: Mapped[str] = mapped_column(String(600), unique=True)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    #: Marcado quando o navegador devolve 404/410: assinatura morta, não insiste.
+    expired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class NotificationLog(Base):
+    """O que já foi enviado, para não avisar a mesma coisa duas vezes no dia."""
+
+    __tablename__ = "notification_log"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("student.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(30))
+    channel: Mapped[str] = mapped_column(String(10))
+    day: Mapped[date] = mapped_column(Date, index=True)
+    delivered: Mapped[bool] = mapped_column(Boolean, default=False)
+    detail: Mapped[str] = mapped_column(String(300), default="")
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("student_id", "kind", "day", name="uq_notification_student_kind_day"),
+        CheckConstraint(f"kind in {NOTIFICATION_KINDS}", name="ck_notification_kind"),
+        CheckConstraint(f"channel in {NOTIFICATION_CHANNELS}", name="ck_notification_channel"),
     )

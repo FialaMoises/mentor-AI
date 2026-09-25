@@ -27,6 +27,8 @@ class ProgressIn(BaseModel):
     action: Literal["feita", "nao_deu"]
     answered: int | None = Field(default=None, ge=0, le=1000)
     correct: int | None = Field(default=None, ge=0, le=1000)
+    #: Gerado no navegador: reenviar a mesma marcação não duplica o evento.
+    client_event_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
     def check_counts(self) -> ProgressIn:

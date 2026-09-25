@@ -1,3 +1,12 @@
+.aviso-offline {
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .head h1 {
   margin: 0.5rem 0 0.25rem;
   font-size: 1.6rem;
@@ -86,4 +95,29 @@ button.ghost {
 button:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.acertos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.acertos label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.acertos input {
+  width: 4.5rem;
+  font: inherit;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: inherit;
 }

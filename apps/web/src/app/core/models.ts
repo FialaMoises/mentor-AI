@@ -19,6 +19,7 @@ export interface DayPlan {
 
 export interface ProgressInput {
   action: 'feita' | 'nao_deu';
-  answered?: number;
-  correct?: number;
+  answered?: number | null;
+  correct?: number | null;
+  client_event_id?: string;
 }

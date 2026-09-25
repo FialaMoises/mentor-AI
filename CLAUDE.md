@@ -14,6 +14,7 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 - Ponte entre banco e motor: `services/api/app/planning/`; jobs em `app/jobs/`
 - Extração com LLM: `app/extraction/`; upload, confirmação e expurgo: `app/documents/`
 - Arquivos: object store em `app/storage/` (MinIO em dev, S3 em produção)
+- Progresso e fila offline: `app/progress/`; notificações: `app/notifications/`
 - Extração: LLM com saída validada por JSON Schema (`services/api/app/extraction/`)
 - Banco: Postgres, migrations com Alembic (`db/migrations/`)
 - Base canônica de temas: YAML versionado em `db/catalog/`, carregado por `python -m app.catalog`
@@ -52,9 +53,12 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 12. **Peso sem fonte não entra na base.** Toda incidência carrega `source` e
    `checked_at`; enquanto não houver curadoria de provas anteriores, vale o peso
    uniforme declarado no catálogo.
-13. **Quem lê o relógio é a borda.** A data entra no motor e no job por
+13. **Marcação de progresso é idempotente.** Toda marcação carrega um
+   `client_event_id` gerado no navegador; a mesma marcação reenviada não vira
+   dois eventos. A fila offline depende disso.
+14. **Quem lê o relógio é a borda.** A data entra no motor e no job por
    argumento — `app/clock.py` é o único lugar que chama `datetime.now`.
-14. **Nada entra na `main` com CI vermelho.**
+15. **Nada entra na `main` com CI vermelho.**
 
 ## Idioma
 

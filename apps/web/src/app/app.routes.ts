@@ -10,5 +10,9 @@ export const routes: Routes = [
     path: 'comecar',
     loadComponent: () => import('./onboarding/onboarding').then((m) => m.Onboarding),
   },
+  {
+    path: 'avisos',
+    loadComponent: () => import('./notifications/notifications').then((m) => m.Notifications),
+  },
   { path: '**', redirectTo: 'hoje' },
 ];

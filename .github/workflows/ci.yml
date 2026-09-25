@@ -82,6 +82,12 @@ jobs:
           DATABASE_URL: postgresql+psycopg://mentor:mentor@localhost:5432/mentor
         run: python -m app.jobs.retention
 
+      - name: Job de notificação roda sem chave de push
+        working-directory: services/api
+        env:
+          DATABASE_URL: postgresql+psycopg://mentor:mentor@localhost:5432/mentor
+        run: python -m app.jobs.notify
+
   web:
     name: PWA
     runs-on: ubuntu-latest

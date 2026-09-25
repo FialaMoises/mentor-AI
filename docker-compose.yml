@@ -49,6 +49,10 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-mentor}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-mentor123}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contato@mentor-ai.app}
+      SMTP_HOST: ${SMTP_HOST:-}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-mentor}:${POSTGRES_PASSWORD:-mentor}@db:5432/${POSTGRES_DB:-mentor}
       CORS_ORIGINS: http://localhost:4200
     command: >

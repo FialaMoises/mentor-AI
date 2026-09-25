@@ -28,6 +28,18 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     extraction_model: str = "claude-sonnet-4-5"
 
+    # Web Push. Sem chave VAPID, a API registra a intenção e não envia nada.
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = "mailto:contato@mentor-ai.app"
+
+    # E-mail de reserva.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    email_from: str = "mentor-AI <nao-responda@mentor-ai.app>"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

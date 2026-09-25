@@ -12,6 +12,8 @@ dependencies = [
   "pydantic>=2.9",
   "pydantic-settings>=2.6",
   "pyyaml>=6.0",
+  "python-multipart>=0.0.9",
+  "boto3>=1.35",
 ]
 
 [project.optional-dependencies]
@@ -22,6 +24,7 @@ dev = [
   "ruff>=0.7",
   "mypy>=1.13",
   "types-PyYAML>=6.0",
+  "types-boto3>=1.35",
 ]
 
 [tool.setuptools.packages.find]

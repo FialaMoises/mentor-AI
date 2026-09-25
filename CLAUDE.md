@@ -11,7 +11,9 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 - Front: Angular com `@angular/pwa` (`apps/web/`)
 - API e jobs: Python / FastAPI (`services/api/`)
 - Motor de planejamento: pacote puro em `services/api/app/engine/`
-- Ponte entre banco e motor: `services/api/app/planning/`; job noturno em `app/jobs/`
+- Ponte entre banco e motor: `services/api/app/planning/`; jobs em `app/jobs/`
+- Extração com LLM: `app/extraction/`; upload, confirmação e expurgo: `app/documents/`
+- Arquivos: object store em `app/storage/` (MinIO em dev, S3 em produção)
 - Extração: LLM com saída validada por JSON Schema (`services/api/app/extraction/`)
 - Banco: Postgres, migrations com Alembic (`db/migrations/`)
 - Base canônica de temas: YAML versionado em `db/catalog/`, carregado por `python -m app.catalog`
@@ -32,21 +34,27 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
    espalhadas pelo código.
 5. **Saída de LLM é dado não confiável.** Sempre validada por JSON Schema antes
    de tocar o banco, e o conteúdo do arquivo do aluno nunca é tratado como
-   instrução.
-6. **Toda consulta é escopada pelo aluno dono do recurso.** Nenhum endpoint
+   instrução. O prompt vive em `app/extraction/prompt.py` para poder ser revisado.
+6. **Nenhum upload sem consentimento registrado**, tipo conferido por assinatura
+   de bytes e tamanho limitado — a checagem é no servidor. O nome do arquivo que
+   o aluno mandou nunca vira caminho nem chave de storage.
+7. **O original tem prazo.** Sai de cena 7 dias depois da confirmação da semana;
+   o expurgo apaga o arquivo e mantém o JSON. Exclusão a pedido do aluno apaga
+   arquivo e registro.
+8. **Toda consulta é escopada pelo aluno dono do recurso.** Nenhum endpoint
    confia em id vindo do cliente sem checar a posse.
-7. **Segredos só em variável de ambiente.** `.env.example` versionado, `.env`
+9. **Segredos só em variável de ambiente.** `.env.example` versionado, `.env`
    nunca.
-8. **Migrations desde o primeiro commit.** Nenhum schema criado à mão.
-9. **O `slug` de um tema é identidade, não rótulo.** Renomear o `name` no
+10. **Migrations desde o primeiro commit.** Nenhum schema criado à mão.
+11. **O `slug` de um tema é identidade, não rótulo.** Renomear o `name` no
    catálogo é seguro; trocar o `slug` cria outro tema e descola o histórico de
    progresso dos alunos.
-10. **Peso sem fonte não entra na base.** Toda incidência carrega `source` e
+12. **Peso sem fonte não entra na base.** Toda incidência carrega `source` e
    `checked_at`; enquanto não houver curadoria de provas anteriores, vale o peso
    uniforme declarado no catálogo.
-11. **Quem lê o relógio é a borda.** A data entra no motor e no job por
+13. **Quem lê o relógio é a borda.** A data entra no motor e no job por
    argumento — `app/clock.py` é o único lugar que chama `datetime.now`.
-12. **Nada entra na `main` com CI vermelho.**
+14. **Nada entra na `main` com CI vermelho.**
 
 ## Idioma
 

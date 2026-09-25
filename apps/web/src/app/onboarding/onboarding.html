@@ -1,0 +1,157 @@
+<section class="passos">
+  <span [class.atual]="passo() === 'questionario'">1 · Você</span>
+  <span [class.atual]="passo() === 'aviso'">2 · Privacidade</span>
+  <span [class.atual]="passo() === 'upload'">3 · Rotina</span>
+  <span [class.atual]="passo() === 'conferencia'">4 · Conferir</span>
+</section>
+
+@if (erro()) {
+  <p class="alert">{{ erro() }}</p>
+}
+
+@switch (passo()) {
+  @case ('questionario') {
+    <h1>Vamos montar seu plano</h1>
+    <p class="muted">Leva dois minutos. Dá para ajustar tudo depois.</p>
+
+    <label class="campo">
+      <span>Você está</span>
+      <select [(ngModel)]="fase">
+        <option value="faculdade">na faculdade</option>
+        <option value="formado">já formado</option>
+      </select>
+    </label>
+
+    <label class="campo">
+      <span>Estuda</span>
+      <select [(ngModel)]="modo">
+        <option value="independente">por conta própria</option>
+        <option value="cursinho">seguindo um cursinho</option>
+      </select>
+    </label>
+
+    <label class="campo">
+      <span>Horas de estudo por semana</span>
+      <input type="number" min="1" max="100" [(ngModel)]="horas" />
+    </label>
+
+    <label class="campo">
+      <span>Prova principal</span>
+      <input type="text" [(ngModel)]="provaNome" />
+    </label>
+
+    <label class="campo">
+      <span>Data da prova</span>
+      <input type="date" [(ngModel)]="provaData" />
+    </label>
+
+    <h2>Como você se sente em cada área</h2>
+    <p class="muted">0 é "nunca vi", 100 é "domino". É só o ponto de partida.</p>
+
+    @for (area of areas(); track area.slug) {
+      <label class="campo nota">
+        <span>{{ area.name }}</span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          [value]="notaDa(area.slug) * 100"
+          (input)="mudarNota(area.slug, $any($event.target).value)"
+        />
+        <small>{{ notaDa(area.slug) * 100 }}</small>
+      </label>
+    }
+
+    <button type="button" [disabled]="!podeEnviarQuestionario() || ocupado()" (click)="enviarQuestionario()">
+      Continuar
+    </button>
+  }
+
+  @case ('aviso') {
+    <h1>Seus arquivos</h1>
+    <p>
+      Para montar o plano, o mentor-AI lê a grade, a escala de plantão ou o cronograma que você
+      enviar. O arquivo é usado só para extrair seus horários.
+    </p>
+    <ul>
+      <li>O original é apagado 7 dias depois de você confirmar a semana.</li>
+      <li>Fica guardado apenas o resultado: seus compromissos e datas.</li>
+      <li>Você pode apagar qualquer arquivo antes disso, quando quiser.</li>
+    </ul>
+    <button type="button" [disabled]="ocupado()" (click)="aceitarAviso()">
+      Entendi e concordo
+    </button>
+  }
+
+  @case ('upload') {
+    <h1>Sua rotina</h1>
+    <p class="muted">PDF, Word, Excel ou foto, até 10 MB.</p>
+
+    <label class="campo">
+      <span>O que é este arquivo</span>
+      <select [(ngModel)]="tipoArquivo">
+        <option value="grade">grade da faculdade</option>
+        <option value="escala">escala de plantão</option>
+        <option value="cursinho">cronograma do cursinho</option>
+        <option value="outro">outro</option>
+      </select>
+    </label>
+
+    <input
+      type="file"
+      accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg"
+      [disabled]="ocupado()"
+      (change)="escolherArquivo($event)"
+    />
+    @if (ocupado()) {
+      <p class="muted">Lendo o arquivo…</p>
+    }
+  }
+
+  @case ('conferencia') {
+    <h1>Confere se está certo</h1>
+    <p class="muted">Corrija o que a leitura errou — é isso que vira seu plano.</p>
+
+    @if (rotina(); as semana) {
+      @if (semana.unreadable.length) {
+        <p class="alert">Não consegui ler: {{ semana.unreadable.join('; ') }}</p>
+      }
+
+      <ul class="compromissos">
+        @for (item of semana.commitments; track $index) {
+          <li>
+            <strong>{{ item.label || item.kind }}</strong>
+            <select [value]="item.weekday ?? 0" (change)="mudarDia($index, $any($event.target).value)">
+              @for (dia of dias; track dia; let i = $index) {
+                <option [value]="i">{{ dia }}</option>
+              }
+            </select>
+            <input
+              type="number"
+              min="15"
+              max="1440"
+              step="15"
+              [value]="item.duration_minutes"
+              (change)="mudarDuracao($index, $any($event.target).value)"
+            />
+            <span class="muted">min</span>
+            <button type="button" class="ghost" (click)="removerCompromisso($index)">remover</button>
+          </li>
+        } @empty {
+          <li class="muted">Nenhum compromisso encontrado — seu dia fica todo livre.</li>
+        }
+      </ul>
+
+      <button type="button" [disabled]="ocupado()" (click)="confirmar()">
+        Está certo, gerar meu plano
+      </button>
+    }
+  }
+
+  @case ('pronto') {
+    <h1>Plano pronto</h1>
+    <p>{{ resumo() }}</p>
+    <button type="button" (click)="irParaHoje()">Ver a lista de hoje</button>
+  }
+}

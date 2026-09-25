@@ -6,19 +6,21 @@ de estudos para a residência, com replanejamento automático.
 A especificação do produto é a fonte da verdade:
 [Mentoria autodidata para residência — v0.1](https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f)
 
-## Estado atual — fase 2
+## Estado atual — fase 3
 
-O motor monta o plano inteiro, do dia seguinte até a prova: teoria, questões
-depois da teoria, revisões em 1, 7 e 30 dias, dia leve sem teoria e dia de prova
-secundária vazio. O job noturno recalcula de amanhã em diante e nunca toca na
-lista que o aluno já abriu; cada rodada grava uma versão de plano com o resumo
-do que mudou.
+O ciclo completo já roda: o aluno responde o questionário, aceita o aviso de
+privacidade, sobe a grade ou a escala, confere a semana que a IA leu e recebe o
+plano até a prova. O motor monta o horizonte inteiro — teoria, questões depois
+da teoria, revisões em 1, 7 e 30 dias, dia leve sem teoria — e o job noturno
+recalcula de amanhã em diante sem tocar na lista que o aluno já abriu.
 
 ```
 apps/web/                 Angular + @angular/pwa
 services/api/             FastAPI, jobs e o motor
   app/engine/             motor puro: sem banco, sem rede, sem relógio
 db/migrations/            Alembic
+  app/extraction/         LLM lendo a rotina, com a saída validada por schema
+  app/documents/          upload, confirmação da semana e expurgo de retenção
 db/catalog/               base canônica de temas, versionada em YAML
 .claude/agents/           teste, validação, code review e segurança
 ```
@@ -53,8 +55,23 @@ python -m app.seed
 uvicorn app.main:app --reload
 ```
 
-O replanejamento noturno roda com `python -m app.jobs.nightly` — em produção,
-uma vez por dia, depois que o dia do aluno fecha.
+Os dois jobs diários:
+
+```bash
+python -m app.jobs.nightly     # replaneja de amanhã em diante
+python -m app.jobs.retention   # apaga os originais que passaram do prazo
+```
+
+## Arquivos do aluno e privacidade
+
+O aluno aceita o aviso antes do primeiro upload — sem consentimento registrado,
+nenhum arquivo entra. O original vive no object store até a confirmação da
+semana mais sete dias; depois o expurgo apaga o arquivo e mantém só o JSON
+extraído. O aluno pode apagar qualquer documento antes disso.
+
+Na extração, o conteúdo do arquivo é tratado como dado, nunca como instrução, e
+a resposta do modelo passa por JSON Schema antes de tocar o banco. Sem
+`ANTHROPIC_API_KEY`, a API usa um dublê e não chama serviço externo nenhum.
 
 PWA:
 

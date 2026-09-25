@@ -76,6 +76,12 @@ jobs:
           DATABASE_URL: postgresql+psycopg://mentor:mentor@localhost:5432/mentor
         run: python -m app.jobs.nightly
 
+      - name: Expurgo de retenção roda sem arquivo vencido
+        working-directory: services/api
+        env:
+          DATABASE_URL: postgresql+psycopg://mentor:mentor@localhost:5432/mentor
+        run: python -m app.jobs.retention
+
   web:
     name: PWA
     runs-on: ubuntu-latest

@@ -9,8 +9,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db import get_session
+from app.deps import get_extraction_provider, get_object_store
+from app.extraction import FakeExtractor
 from app.main import app
 from app.models import Base
+from app.storage import InMemoryStore
 
 
 @pytest.fixture
@@ -33,12 +36,28 @@ def session() -> Iterator[Session]:
 
 
 @pytest.fixture
-def client(session: Session) -> Iterator[TestClient]:
+def api_store() -> InMemoryStore:
+    """O object store que a API usa nos testes — nada sai da memória."""
+    return InMemoryStore()
+
+
+@pytest.fixture
+def api_provider() -> FakeExtractor:
+    """O dublê da extração. O teste ajusta `payload` antes de subir o arquivo."""
+    return FakeExtractor()
+
+
+@pytest.fixture
+def client(
+    session: Session, api_store: InMemoryStore, api_provider: FakeExtractor
+) -> Iterator[TestClient]:
     def override() -> Iterator[Session]:
         yield session
         session.commit()
 
     app.dependency_overrides[get_session] = override
+    app.dependency_overrides[get_object_store] = lambda: api_store
+    app.dependency_overrides[get_extraction_provider] = lambda: api_provider
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()

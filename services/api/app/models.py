@@ -10,6 +10,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     Date,
@@ -50,6 +51,8 @@ class Student(Base):
     phase: Mapped[str] = mapped_column(String(20))  # faculdade | formado
     mode: Mapped[str] = mapped_column(String(20))  # cursinho | independente
     timezone: Mapped[str] = mapped_column(String(64), default="America/Fortaleza")
+    #: Horas de estudo por semana declaradas no questionário.
+    weekly_hours: Mapped[int] = mapped_column(Integer, default=14)
     subscription_status: Mapped[str] = mapped_column(String(20), default="trial")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -230,3 +233,86 @@ class ProgressEvent(Base):
     )
 
     __table_args__ = (CheckConstraint(f"action in {PROGRESS_ACTIONS}", name="ck_progress_action"),)
+
+
+DOCUMENT_KINDS = ("grade", "escala", "cursinho", "outro")
+DOCUMENT_STATUSES = ("recebido", "extraido", "confirmado", "falhou")
+COMMITMENT_KINDS = ("aula", "plantao", "academia", "trabalho", "outro")
+
+
+class Consent(Base):
+    """Consentimento LGPD registrado antes do primeiro upload."""
+
+    __tablename__ = "consent"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("student.id", ondelete="CASCADE"), index=True
+    )
+    purpose: Mapped[str] = mapped_column(String(60))
+    policy_version: Mapped[str] = mapped_column(String(20))
+    accepted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class Document(Base):
+    """Documento de rotina que o aluno subiu.
+
+    O original vive no object store até a confirmação da semana mais o prazo de
+    retenção; depois o expurgo apaga o arquivo e mantém só o JSON extraído.
+    """
+
+    __tablename__ = "document"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("student.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(20))
+    original_name: Mapped[str] = mapped_column(String(255))
+    storage_key: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    content_type: Mapped[str] = mapped_column(String(120))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(20), default="recebido")
+    extracted: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str] = mapped_column(String(400), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    retention_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(f"kind in {DOCUMENT_KINDS}", name="ck_document_kind"),
+        CheckConstraint(f"status in {DOCUMENT_STATUSES}", name="ck_document_status"),
+    )
+
+
+class Commitment(Base):
+    """Compromisso da rotina: aula, plantão, academia, trabalho.
+
+    Tem vigência, porque a rotina muda por rodízio ou escala.
+    """
+
+    __tablename__ = "commitment"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("student.id", ondelete="CASCADE"), index=True
+    )
+    document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("document.id", ondelete="SET NULL"), nullable=True
+    )
+    kind: Mapped[str] = mapped_column(String(20))
+    label: Mapped[str] = mapped_column(String(160), default="")
+    weekday: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    on_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+    duration_minutes: Mapped[int] = mapped_column(Integer)
+    starts_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(f"kind in {COMMITMENT_KINDS}", name="ck_commitment_kind"),
+        CheckConstraint("(weekday is null) <> (on_day is null)", name="ck_commitment_recurrence"),
+        CheckConstraint("duration_minutes > 0", name="ck_commitment_duration"),
+    )

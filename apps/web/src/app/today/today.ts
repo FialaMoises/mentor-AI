@@ -1,8 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 
-import { SEED_STUDENT_ID } from '../core/config';
 import { DayPlan, PlanTask, TaskStatus } from '../core/models';
 import { PlanApi } from '../core/plan-api';
+import { Session } from '../core/session';
 
 @Component({
   selector: 'app-today',
@@ -11,6 +11,7 @@ import { PlanApi } from '../core/plan-api';
 })
 export class Today {
   private readonly api = inject(PlanApi);
+  private readonly session = inject(Session);
 
   protected readonly plan = signal<DayPlan | null>(null);
   protected readonly error = signal<string | null>(null);
@@ -28,7 +29,7 @@ export class Today {
   protected load(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.api.today(SEED_STUDENT_ID).subscribe({
+    this.api.today(this.session.studentId).subscribe({
       next: (plan) => {
         this.plan.set(plan);
         this.loading.set(false);

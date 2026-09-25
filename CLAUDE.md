@@ -11,6 +11,7 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 - Front: Angular com `@angular/pwa` (`apps/web/`)
 - API e jobs: Python / FastAPI (`services/api/`)
 - Motor de planejamento: pacote puro em `services/api/app/engine/`
+- Ponte entre banco e motor: `services/api/app/planning/`; job noturno em `app/jobs/`
 - Extração: LLM com saída validada por JSON Schema (`services/api/app/extraction/`)
 - Banco: Postgres, migrations com Alembic (`db/migrations/`)
 - Base canônica de temas: YAML versionado em `db/catalog/`, carregado por `python -m app.catalog`
@@ -24,7 +25,8 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 2. **Regra de negócio mora no motor.** Nada de prioridade, proficiência ou
    capacidade recalculada no endpoint, no job ou no front.
 3. **O dia de hoje é congelado.** O job noturno recalcula a partir de amanhã e
-   nunca altera a lista que o aluno já abriu.
+   nunca altera a lista que o aluno já abriu. Replanejar apaga só tarefas
+   pendentes: feita e não deu são histórico.
 4. **Parâmetros de calibração** (k, intervalos de revisão, limiar de
    inatividade, durações padrão) ficam em configuração, nunca como constantes
    espalhadas pelo código.
@@ -42,7 +44,9 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 10. **Peso sem fonte não entra na base.** Toda incidência carrega `source` e
    `checked_at`; enquanto não houver curadoria de provas anteriores, vale o peso
    uniforme declarado no catálogo.
-11. **Nada entra na `main` com CI vermelho.**
+11. **Quem lê o relógio é a borda.** A data entra no motor e no job por
+   argumento — `app/clock.py` é o único lugar que chama `datetime.now`.
+12. **Nada entra na `main` com CI vermelho.**
 
 ## Idioma
 

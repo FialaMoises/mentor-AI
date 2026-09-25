@@ -16,11 +16,9 @@ from sqlalchemy.orm import Session
 from .catalog import load as load_catalog
 from .clock import today_in
 from .db import SessionLocal
-from .engine import Candidate, DayCapacity, EngineParams, TaskKind, TopicState, fill_day
 from .models import (
     DailyCapacity,
     Exam,
-    PlanVersion,
     Proficiency,
     ProgressEvent,
     Student,
@@ -29,6 +27,7 @@ from .models import (
     Topic,
     TopicIncidence,
 )
+from .planning import replan
 
 SEED_STUDENT_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
 SEED_EXAM_SLUG = "enamed"
@@ -76,7 +75,6 @@ def run(session: Session, today: date | None = None) -> None:
     target.is_primary = True
     session.flush()
 
-    topics: dict[str, TopicState] = {}
     for slug, self_assessment in SEED_SELF_ASSESSMENT.items():
         topic = session.scalar(select(Topic).where(Topic.slug == slug))
         if topic is None:  # pragma: no cover - slug tem que existir no catálogo
@@ -103,11 +101,6 @@ def run(session: Session, today: date | None = None) -> None:
                     self_assessment=self_assessment,
                 )
             )
-        topics[str(topic.id)] = TopicState(
-            topic_id=str(topic.id),
-            incidence=incidence.weight,
-            self_assessment=self_assessment,
-        )
     session.flush()
 
     capacity = session.scalar(
@@ -120,57 +113,16 @@ def run(session: Session, today: date | None = None) -> None:
         session.add(capacity)
         session.flush()
 
-    # O plano de hoje é regerado a cada seed, junto com o histórico do dia.
+    # O seed usa o mesmo caminho do replanejamento: o dia de hoje entra junto.
     task_ids = list(
-        session.scalars(select(Task.id).where(Task.student_id == student.id, Task.day == day))
+        session.scalars(select(Task.id).where(Task.student_id == student.id, Task.day >= day))
     )
     if task_ids:
         session.execute(delete(ProgressEvent).where(ProgressEvent.task_id.in_(task_ids)))
         session.execute(delete(Task).where(Task.id.in_(task_ids)))
-
-    version_number = (
-        session.scalar(
-            select(PlanVersion.number)
-            .where(PlanVersion.student_id == student.id)
-            .order_by(PlanVersion.number.desc())
-        )
-        or 0
-    ) + 1
-    plan_version = PlanVersion(
-        student_id=student.id,
-        number=version_number,
-        reason="seed",
-        summary="Plano inicial do aluno de exemplo.",
-    )
-    session.add(plan_version)
     session.flush()
 
-    candidates = [
-        Candidate(topic_id=topic_id, kind=kind, minutes=minutes)
-        for topic_id in topics
-        for kind, minutes in ((TaskKind.TEORIA, 50), (TaskKind.QUESTOES, 30))
-    ]
-    planned = fill_day(
-        capacity=DayCapacity(day=day, free_minutes=capacity.free_minutes, light=capacity.light),
-        candidates=candidates,
-        topics=topics,
-        exam_date=exam_date,
-        params=EngineParams(),
-    )
-
-    for position, task in enumerate(planned):
-        session.add(
-            Task(
-                student_id=student.id,
-                plan_version_id=plan_version.id,
-                topic_id=uuid.UUID(task.topic_id),
-                kind=task.kind.value,
-                day=task.day,
-                minutes=task.minutes,
-                position=position,
-                status="pendente",
-            )
-        )
+    replan(session, student, day, reason="seed", from_tomorrow=False)
 
 
 def main() -> None:

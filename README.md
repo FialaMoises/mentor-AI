@@ -6,11 +6,13 @@ de estudos para a residência, com replanejamento automático.
 A especificação do produto é a fonte da verdade:
 [Mentoria autodidata para residência — v0.1](https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f)
 
-## Estado atual — fase 1
+## Estado atual — fase 2
 
-Fatia vertical funcionando ponta a ponta: o seed planeja o dia de um aluno de
-exemplo com o motor, a API devolve a lista, e a PWA mostra o checklist e envia o
-progresso de volta. A base canônica de temas já está carregada e consultável.
+O motor monta o plano inteiro, do dia seguinte até a prova: teoria, questões
+depois da teoria, revisões em 1, 7 e 30 dias, dia leve sem teoria e dia de prova
+secundária vazio. O job noturno recalcula de amanhã em diante e nunca toca na
+lista que o aluno já abriu; cada rodada grava uma versão de plano com o resumo
+do que mudou.
 
 ```
 apps/web/                 Angular + @angular/pwa
@@ -50,6 +52,9 @@ python -m app.catalog
 python -m app.seed
 uvicorn app.main:app --reload
 ```
+
+O replanejamento noturno roda com `python -m app.jobs.nightly` — em produção,
+uma vez por dia, depois que o dia do aluno fecha.
 
 PWA:
 

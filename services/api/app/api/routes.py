@@ -29,7 +29,18 @@ from ..models import (
     Topic,
     TopicIncidence,
 )
-from ..schemas import AreaOut, CatalogOut, DayPlanOut, PlanTaskOut, ProgressIn, SubtemaOut, TemaOut
+from ..planning import PlanningError, primary_exam, project, replan
+from ..schemas import (
+    AreaOut,
+    CatalogOut,
+    DayPlanOut,
+    PlanTaskOut,
+    ProgressIn,
+    ProjectionOut,
+    ReplanOut,
+    SubtemaOut,
+    TemaOut,
+)
 
 router = APIRouter(prefix="/api/v1")
 
@@ -124,6 +135,57 @@ def read_today(
             )
             for task in tasks
         ],
+    )
+
+
+@router.get("/students/{student_id}/plan/projection", response_model=ProjectionOut)
+def read_projection(
+    student_id: uuid.UUID, session: Annotated[Session, Depends(get_session)]
+) -> ProjectionOut:
+    """Responde à pergunta do aviso de estouro: isso cabe até a prova?"""
+    student = resolve_student(student_id, session)
+    try:
+        alvo = primary_exam(session, student)
+        plano = project(session, student, today_in(student.timezone))
+    except PlanningError as erro:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(erro)) from erro
+
+    projecao = plano.projection
+    nomes = {
+        str(topic.id): topic.name
+        for topic in session.scalars(
+            select(Topic).where(Topic.id.in_([uuid.UUID(t) for t in projecao.unscheduled_topics]))
+        )
+    }
+    return ProjectionOut(
+        fits=projecao.fits,
+        exam_date=alvo.exam_date,
+        days_left=projecao.days_left,
+        planned_minutes=projecao.planned_minutes,
+        available_minutes=projecao.available_minutes,
+        missing_minutes=projecao.missing_minutes,
+        extra_minutes_per_day=projecao.extra_minutes_per_day,
+        unscheduled_topics=[nomes.get(t, t) for t in projecao.unscheduled_topics],
+    )
+
+
+@router.post("/students/{student_id}/plan/replan", response_model=ReplanOut)
+def request_replan(
+    student_id: uuid.UUID, session: Annotated[Session, Depends(get_session)]
+) -> ReplanOut:
+    """Replaneja na hora, de amanhã em diante. O dia de hoje continua congelado."""
+    student = resolve_student(student_id, session)
+    try:
+        resultado = replan(session, student, today_in(student.timezone), reason="pedido do aluno")
+    except PlanningError as erro:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(erro)) from erro
+
+    return ReplanOut(
+        plan_version=resultado.version.number,
+        summary=resultado.version.summary,
+        created=resultado.created,
+        removed=resultado.removed,
+        fits=resultado.fits,
     )
 
 

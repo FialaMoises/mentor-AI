@@ -1,3 +1,3 @@
-from .service import ExamInput, OnboardingError, create_student, set_primary_exam
+from .service import ExamInput, OnboardingError, set_primary_exam, setup_student
 
-__all__ = ["ExamInput", "OnboardingError", "create_student", "set_primary_exam"]
+__all__ = ["ExamInput", "OnboardingError", "set_primary_exam", "setup_student"]

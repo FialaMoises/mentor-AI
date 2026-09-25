@@ -54,7 +54,7 @@ class Student(Base):
     #: Horas de estudo por semana declaradas no questionário.
     weekly_hours: Mapped[int] = mapped_column(Integer, default=14)
     #: Reserva para quando o push não estiver disponível (iPhone sem app instalado).
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True, index=True)
     subscription_status: Mapped[str] = mapped_column(String(20), default="trial")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -369,4 +369,84 @@ class NotificationLog(Base):
         UniqueConstraint("student_id", "kind", "day", name="uq_notification_student_kind_day"),
         CheckConstraint(f"kind in {NOTIFICATION_KINDS}", name="ck_notification_kind"),
         CheckConstraint(f"channel in {NOTIFICATION_CHANNELS}", name="ck_notification_channel"),
+    )
+
+
+SUBSCRIPTION_STATUSES = ("trial", "ativa", "pausada", "atrasada", "cancelada")
+SUBSCRIPTION_PLANS = ("mensal", "anual")
+
+
+class LoginToken(Base):
+    """Link mágico de entrada. Guardamos o hash, nunca o token em si."""
+
+    __tablename__ = "login_token"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    email: Mapped[str] = mapped_column(String(255), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AuthSession(Base):
+    """Sessão do aluno depois que ele clicou no link. Também só o hash."""
+
+    __tablename__ = "auth_session"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("student.id", ondelete="CASCADE"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Subscription(Base):
+    """A assinatura do aluno. Pausar fica ao lado de cancelar, de propósito."""
+
+    __tablename__ = "subscription"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("student.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    status: Mapped[str] = mapped_column(String(20), default="trial")
+    plan: Mapped[str] = mapped_column(String(20), default="mensal")
+    price_cents: Mapped[int] = mapped_column(Integer, default=0)
+    provider: Mapped[str] = mapped_column(String(30), default="")
+    provider_ref: Mapped[str] = mapped_column(String(120), default="")
+    trial_ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    current_period_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    paused_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    canceled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint(f"status in {SUBSCRIPTION_STATUSES}", name="ck_subscription_status"),
+        CheckConstraint(f"plan in {SUBSCRIPTION_PLANS}", name="ck_subscription_plan"),
+        CheckConstraint("price_cents >= 0", name="ck_subscription_price"),
+    )
+
+
+class PaymentEvent(Base):
+    """Evento vindo do gateway. O id do provedor é único: webhook repetido não repete efeito."""
+
+    __tablename__ = "payment_event"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    provider: Mapped[str] = mapped_column(String(30))
+    external_id: Mapped[str] = mapped_column(String(120))
+    kind: Mapped[str] = mapped_column(String(40))
+    payload: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint("provider", "external_id", name="uq_payment_event_provider_external"),
     )

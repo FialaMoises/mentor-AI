@@ -6,13 +6,14 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..db import get_session
+from ..deps import current_student
 from ..models import PushSubscription, Student
 from ..progress import ProgressEntry, sync
 
@@ -53,13 +54,6 @@ class SyncOut(BaseModel):
     unknown: int
 
 
-def _student(student_id: uuid.UUID, session: Session) -> Student:
-    aluno = session.get(Student, student_id)
-    if aluno is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "aluno não encontrado")
-    return aluno
-
-
 @router.get("/push/config", response_model=PushConfigOut)
 def get_push_config() -> PushConfigOut:
     """A chave pública que o navegador precisa para assinar."""
@@ -69,14 +63,12 @@ def get_push_config() -> PushConfigOut:
     )
 
 
-@router.post("/students/{student_id}/push-subscriptions", status_code=status.HTTP_201_CREATED)
+@router.post("/me/push-subscriptions", status_code=status.HTTP_201_CREATED)
 def post_subscription(
-    student_id: uuid.UUID,
     payload: PushSubscriptionIn,
+    aluno: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
 ) -> dict[str, str]:
-    aluno = _student(student_id, session)
-
     assinatura = session.scalar(
         select(PushSubscription).where(PushSubscription.endpoint == payload.endpoint)
     )
@@ -91,13 +83,12 @@ def post_subscription(
     return {"status": "assinado"}
 
 
-@router.delete("/students/{student_id}/push-subscriptions", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/me/push-subscriptions", status_code=status.HTTP_204_NO_CONTENT)
 def delete_subscription(
-    student_id: uuid.UUID,
     endpoint: str,
+    aluno: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
 ) -> None:
-    aluno = _student(student_id, session)
     assinatura = session.scalar(
         select(PushSubscription).where(
             PushSubscription.endpoint == endpoint, PushSubscription.student_id == aluno.id
@@ -108,14 +99,13 @@ def delete_subscription(
         session.flush()
 
 
-@router.post("/students/{student_id}/progress/sync", response_model=SyncOut)
+@router.post("/me/progress/sync", response_model=SyncOut)
 def post_sync(
-    student_id: uuid.UUID,
     payload: SyncIn,
+    aluno: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
 ) -> SyncOut:
     """A fila que o navegador acumulou offline. Reenviar a mesma fila é seguro."""
-    aluno = _student(student_id, session)
     resultado = sync(
         session,
         aluno,

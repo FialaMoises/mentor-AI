@@ -30,6 +30,7 @@ from .models import (
 from .planning import replan
 
 SEED_STUDENT_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
+SEED_EMAIL = "aluno.exemplo@mentor-ai.app"
 SEED_EXAM_SLUG = "enamed"
 
 #: Subtemas do catálogo com a autoavaliação inicial do aluno de exemplo.
@@ -58,6 +59,7 @@ def run(session: Session, today: date | None = None) -> None:
             mode="independente",
             timezone="America/Fortaleza",
             subscription_status="trial",
+            email=SEED_EMAIL,
         )
         session.add(student)
         session.flush()

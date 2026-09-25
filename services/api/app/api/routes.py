@@ -1,8 +1,7 @@
-"""Rotas da fase 0: ler a lista do dia e marcar progresso.
+"""Plano do dia, projeção, replanejamento e catálogo.
 
-Fase 0 roda sem autenticação, com o aluno do seed. O ponto de costura está em
-`resolve_student`: quando a fase 3 trouxer o login, o escopo por aluno passa a
-valer para todas as rotas mudando só essa função.
+O aluno vem da sessão, nunca da URL: não existe rota onde dá para pedir o plano
+de outra pessoa trocando um id. A tarefa marcada é conferida contra o dono.
 """
 
 from __future__ import annotations
@@ -16,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..clock import today_in
 from ..db import get_session
+from ..deps import current_student
 from ..models import (
     TOPIC_LEVEL_AREA,
     TOPIC_LEVEL_SUBTEMA,
@@ -92,18 +92,11 @@ def read_catalog(exam_slug: str, session: Annotated[Session, Depends(get_session
     return CatalogOut(exam=exam.slug, exam_name=exam.name, weights_source=fonte, areas=areas)
 
 
-def resolve_student(student_id: uuid.UUID, session: Session) -> Student:
-    student = session.get(Student, student_id)
-    if student is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "aluno não encontrado")
-    return student
-
-
-@router.get("/students/{student_id}/plan/today", response_model=DayPlanOut)
+@router.get("/me/plan/today", response_model=DayPlanOut)
 def read_today(
-    student_id: uuid.UUID, session: Annotated[Session, Depends(get_session)]
+    student: Annotated[Student, Depends(current_student)],
+    session: Annotated[Session, Depends(get_session)],
 ) -> DayPlanOut:
-    student = resolve_student(student_id, session)
     day = today_in(student.timezone)
 
     capacity = session.scalar(
@@ -137,12 +130,12 @@ def read_today(
     )
 
 
-@router.get("/students/{student_id}/plan/projection", response_model=ProjectionOut)
+@router.get("/me/plan/projection", response_model=ProjectionOut)
 def read_projection(
-    student_id: uuid.UUID, session: Annotated[Session, Depends(get_session)]
+    student: Annotated[Student, Depends(current_student)],
+    session: Annotated[Session, Depends(get_session)],
 ) -> ProjectionOut:
     """Responde à pergunta do aviso de estouro: isso cabe até a prova?"""
-    student = resolve_student(student_id, session)
     try:
         alvo = primary_exam(session, student)
         plano = project(session, student, today_in(student.timezone))
@@ -168,12 +161,12 @@ def read_projection(
     )
 
 
-@router.post("/students/{student_id}/plan/replan", response_model=ReplanOut)
+@router.post("/me/plan/replan", response_model=ReplanOut)
 def request_replan(
-    student_id: uuid.UUID, session: Annotated[Session, Depends(get_session)]
+    student: Annotated[Student, Depends(current_student)],
+    session: Annotated[Session, Depends(get_session)],
 ) -> ReplanOut:
     """Replaneja na hora, de amanhã em diante. O dia de hoje continua congelado."""
-    student = resolve_student(student_id, session)
     try:
         resultado = replan(session, student, today_in(student.timezone), reason="pedido do aluno")
     except PlanningError as erro:
@@ -192,10 +185,12 @@ def request_replan(
 def mark_progress(
     task_id: uuid.UUID,
     payload: ProgressIn,
+    student: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
 ) -> PlanTaskOut:
     task = session.get(Task, task_id)
-    if task is None:
+    # Tarefa de outro aluno responde 404, não 403: nem confirma que existe.
+    if task is None or task.student_id != student.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "tarefa não encontrada")
 
     apply_progress(

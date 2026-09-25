@@ -117,6 +117,8 @@ def test_falha_sem_email_fica_registrada_como_nao_entregue(
     session: Session, aluno: Student
 ) -> None:
     assina(session, aluno)
+    aluno.email = None  # sem reserva: a falha tem que aparecer
+    session.flush()
     senders = Senders(push=PushQuebrado(SendFailed("timeout")), email=NullEmailSender())
 
     resultado = deliver(session, aluno, Message(title="t", body="b"), senders)

@@ -152,9 +152,13 @@ def test_acertos_da_fila_somam_na_proficiencia(session: Session, aluno: Student)
 
 
 def test_sincronizacao_pela_api_devolve_a_contagem(
-    client: TestClient, session: Session, aluno: Student
+    client: TestClient,
+    session: Session,
+    aluno: Student,
+    login,  # type: ignore[no-untyped-def]
 ) -> None:
     session.commit()
+    cabecalho = login(aluno)
     tarefa = tarefas(session, aluno)[0]
     entrada = {
         "task_id": str(tarefa.id),
@@ -163,10 +167,10 @@ def test_sincronizacao_pela_api_devolve_a_contagem(
     }
 
     primeira = client.post(
-        f"/api/v1/students/{aluno.id}/progress/sync", json={"entries": [entrada]}
+        "/api/v1/me/progress/sync", json={"entries": [entrada]}, headers=cabecalho
     ).json()
     segunda = client.post(
-        f"/api/v1/students/{aluno.id}/progress/sync", json={"entries": [entrada]}
+        "/api/v1/me/progress/sync", json={"entries": [entrada]}, headers=cabecalho
     ).json()
 
     assert primeira == {"applied": 1, "duplicates": 0, "unknown": 0}

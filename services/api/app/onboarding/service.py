@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from sqlalchemy import delete as sql_delete
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -56,8 +57,9 @@ def _descendant_subtopics(session: Session, area_slug: str) -> list[Topic]:
     )
 
 
-def create_student(
+def setup_student(
     session: Session,
+    student: Student,
     *,
     phase: str,
     mode: str,
@@ -80,14 +82,17 @@ def create_student(
         if not 0.0 <= valor <= 1.0:
             raise OnboardingError(f"autoavaliação de {area} fora da faixa de 0 a 1")
 
-    aluno = Student(
-        phase=phase,
-        mode=mode,
-        timezone=timezone,
-        weekly_hours=weekly_hours,
-        subscription_status="trial",
-    )
-    session.add(aluno)
+    # O aluno já existe: entrou pelo link mágico. O questionário só o completa.
+    aluno = student
+    aluno.phase = phase
+    aluno.mode = mode
+    aluno.timezone = timezone
+    aluno.weekly_hours = weekly_hours
+    session.flush()
+
+    # Refazer o questionário substitui as respostas antigas, não soma.
+    session.execute(sql_delete(TargetExamRow).where(TargetExamRow.student_id == aluno.id))
+    session.execute(sql_delete(Proficiency).where(Proficiency.student_id == aluno.id))
     session.flush()
 
     prova_do_catalogo = session.scalar(select(Exam).where(Exam.slug == exam_slug))

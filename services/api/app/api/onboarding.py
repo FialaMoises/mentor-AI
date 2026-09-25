@@ -12,9 +12,10 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..db import get_session
+from ..deps import current_student
 from ..documents import POLICY_VERSION, has_consent, record_consent
 from ..models import Proficiency, Student
-from ..onboarding import ExamInput, OnboardingError, create_student, set_primary_exam
+from ..onboarding import ExamInput, OnboardingError, set_primary_exam, setup_student
 
 #: O nome da constante mudou entre versões do Starlette; o número, não.
 UNPROCESSABLE = 422
@@ -28,7 +29,7 @@ class ExamIn(BaseModel):
     is_primary: bool = False
 
 
-class StudentIn(BaseModel):
+class ProfileIn(BaseModel):
     phase: Literal["faculdade", "formado"]
     mode: Literal["cursinho", "independente"]
     timezone: str = Field(default="America/Fortaleza", max_length=64)
@@ -38,7 +39,7 @@ class StudentIn(BaseModel):
     self_assessment: dict[str, float] = Field(min_length=1)
 
 
-class StudentOut(BaseModel):
+class ProfileOut(BaseModel):
     id: uuid.UUID
     phase: str
     mode: str
@@ -52,20 +53,17 @@ class ConsentOut(BaseModel):
     policy_version: str
 
 
-def _student(student_id: uuid.UUID, session: Session) -> Student:
-    aluno = session.get(Student, student_id)
-    if aluno is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "aluno não encontrado")
-    return aluno
-
-
-@router.post("/students", response_model=StudentOut, status_code=status.HTTP_201_CREATED)
-def post_student(
-    payload: StudentIn, session: Annotated[Session, Depends(get_session)]
-) -> StudentOut:
+@router.put("/me/profile", response_model=ProfileOut)
+def put_profile(
+    payload: ProfileIn,
+    aluno: Annotated[Student, Depends(current_student)],
+    session: Annotated[Session, Depends(get_session)],
+) -> ProfileOut:
+    """O questionário preenche o aluno que já entrou pelo link mágico."""
     try:
-        aluno = create_student(
+        setup_student(
             session,
+            aluno,
             phase=payload.phase,
             mode=payload.mode,
             timezone=payload.timezone,
@@ -82,7 +80,7 @@ def post_student(
     avaliados = session.scalar(
         select(func.count()).select_from(Proficiency).where(Proficiency.student_id == aluno.id)
     )
-    return StudentOut(
+    return ProfileOut(
         id=aluno.id,
         phase=aluno.phase,
         mode=aluno.mode,
@@ -92,24 +90,23 @@ def post_student(
     )
 
 
-@router.post("/students/{student_id}/consent", response_model=ConsentOut)
+@router.post("/me/consent", response_model=ConsentOut)
 def post_consent(
-    student_id: uuid.UUID, session: Annotated[Session, Depends(get_session)]
+    aluno: Annotated[Student, Depends(current_student)],
+    session: Annotated[Session, Depends(get_session)],
 ) -> ConsentOut:
     """O aluno aceita o aviso de privacidade. Sem isto, upload nenhum passa."""
-    aluno = _student(student_id, session)
     if not has_consent(session, aluno):
         record_consent(session, aluno)
     return ConsentOut(accepted=True, policy_version=POLICY_VERSION)
 
 
-@router.post("/students/{student_id}/exams/{target_exam_id}/primary", response_model=dict)
+@router.post("/me/exams/{target_exam_id}/primary", response_model=dict)
 def post_primary_exam(
-    student_id: uuid.UUID,
     target_exam_id: uuid.UUID,
+    aluno: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
 ) -> dict[str, str]:
-    aluno = _student(student_id, session)
     try:
         alvo = set_primary_exam(session, aluno, target_exam_id)
     except OnboardingError as erro:

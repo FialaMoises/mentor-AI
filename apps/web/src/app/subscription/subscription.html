@@ -1,0 +1,75 @@
+<h1>Sua conta</h1>
+
+@if (erro()) {
+  <p class="alert">{{ erro() }}</p>
+}
+
+@if (assinatura(); as plano) {
+  <section class="cartao">
+    <p class="status">
+      <strong>{{ plano.status }}</strong>
+      @if (plano.status === 'trial' && plano.trial_ends_on) {
+        · teste até {{ plano.trial_ends_on }}
+      }
+      @if (plano.status === 'ativa' && plano.current_period_end) {
+        · renova em {{ plano.current_period_end }}
+      }
+      @if (plano.status === 'pausada' && plano.paused_until) {
+        · volta em {{ plano.paused_until }}
+      }
+    </p>
+    @if (!plano.has_access) {
+      <p class="muted">Seu plano está parado. Seus dados continuam aqui, esperando você.</p>
+    }
+  </section>
+
+  @if (plano.status !== 'pausada' && plano.status !== 'ativa') {
+    <h2>Assinar</h2>
+    <div class="planos">
+      <button type="button" [disabled]="ocupado()" (click)="assinar('mensal')">Mensal</button>
+      <button type="button" [disabled]="ocupado()" (click)="assinar('anual')">
+        Anual, com desconto
+      </button>
+    </div>
+  }
+
+  <h2>Precisa dar um tempo?</h2>
+  @if (plano.status === 'pausada') {
+    <p class="muted">Assinatura pausada. Quando voltar, o plano se refaz sozinho.</p>
+    <button type="button" (click)="retomar()">Voltar a estudar</button>
+  } @else {
+    <p class="muted">Pausar guarda tudo e para a cobrança. Nada é apagado.</p>
+    <label class="campo">
+      <span>Pausar até</span>
+      <input type="date" [(ngModel)]="pausarAte" name="pausarAte" />
+    </label>
+    <div class="acoes">
+      <button type="button" [disabled]="ocupado()" (click)="pausar()">Pausar</button>
+      <button type="button" class="ghost" (click)="confirmandoCancelamento.set(true)">
+        Cancelar assinatura
+      </button>
+    </div>
+  }
+
+  @if (confirmandoCancelamento()) {
+    <p class="alert">
+      Cancelar encerra a cobrança e o acesso. Se for só uma pausa, prefira pausar.
+    </p>
+    <div class="acoes">
+      <button type="button" (click)="cancelar()">Cancelar mesmo assim</button>
+      <button type="button" class="ghost" (click)="confirmandoCancelamento.set(false)">
+        Deixa pra lá
+      </button>
+    </div>
+  }
+}
+
+<h2>Seus dados</h2>
+<div class="acoes">
+  <button type="button" class="ghost" (click)="exportar()">Baixar meus dados</button>
+  <button type="button" class="ghost" (click)="sair()">Sair</button>
+  <button type="button" class="ghost perigo" (click)="apagarConta()">Apagar minha conta</button>
+</div>
+<p class="muted">
+  Apagar a conta remove seu plano, seu progresso e os arquivos que você enviou. Não dá para desfazer.
+</p>

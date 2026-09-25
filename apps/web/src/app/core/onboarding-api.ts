@@ -76,22 +76,19 @@ export class OnboardingApi {
     return this.http.get<Catalogo>(`${API}/catalog/${prova}`);
   }
 
-  criarAluno(entrada: QuestionarioInput): Observable<AlunoCriado> {
-    return this.http.post<AlunoCriado>(`${API}/students`, entrada);
+  salvarPerfil(entrada: QuestionarioInput): Observable<AlunoCriado> {
+    return this.http.put<AlunoCriado>(`${API}/me/profile`, entrada);
   }
 
-  aceitarAviso(studentId: string): Observable<{ accepted: boolean; policy_version: string }> {
-    return this.http.post<{ accepted: boolean; policy_version: string }>(
-      `${API}/students/${studentId}/consent`,
-      {},
-    );
+  aceitarAviso(): Observable<{ accepted: boolean; policy_version: string }> {
+    return this.http.post<{ accepted: boolean; policy_version: string }>(`${API}/me/consent`, {});
   }
 
-  enviarArquivo(studentId: string, arquivo: File, kind: string): Observable<DocumentoOut> {
+  enviarArquivo(arquivo: File, kind: string): Observable<DocumentoOut> {
     const corpo = new FormData();
     corpo.append('file', arquivo);
     corpo.append('kind', kind);
-    return this.http.post<DocumentoOut>(`${API}/students/${studentId}/documents`, corpo);
+    return this.http.post<DocumentoOut>(`${API}/me/documents`, corpo);
   }
 
   confirmar(documentId: string, rotina: RotinaExtraida): Observable<ConfirmacaoOut> {

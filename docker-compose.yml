@@ -17,8 +17,12 @@ services:
       timeout: 3s
       retries: 20
 
+  # Só para desenvolvimento: em produção o object store é S3 de verdade.
+  # A MinIO tirou as imagens do Docker Hub, então vem do registro deles no
+  # quay.io, com tag fixa — essa imagem não recebe mais patch, e é por isso
+  # que ela não passa de dependência local.
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-mentor}
@@ -28,11 +32,6 @@ services:
       - "9001:9001"
     volumes:
       - minio-data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   api:
     build:

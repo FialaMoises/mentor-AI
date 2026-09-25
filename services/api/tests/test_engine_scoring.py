@@ -78,3 +78,22 @@ def test_horizonte_precisa_ser_positivo() -> None:
 def test_questoes_negativas_nao_sao_aceitas() -> None:
     with pytest.raises(ValueError):
         tema(answered=-1)
+
+
+def test_parametros_de_revisao_precisam_fazer_sentido() -> None:
+    with pytest.raises(ValueError):
+        EngineParams(review_offsets_days=())
+    with pytest.raises(ValueError):
+        EngineParams(review_offsets_days=(1, 0, 7))
+
+
+def test_retomada_precisa_de_fracao_valida() -> None:
+    with pytest.raises(ValueError):
+        EngineParams(restart_floor=0)
+    with pytest.raises(ValueError):
+        EngineParams(restart_floor=1.5)
+
+
+def test_revisoes_feitas_nao_podem_ser_negativas() -> None:
+    with pytest.raises(ValueError):
+        tema(reviews_done=-1)

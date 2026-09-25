@@ -60,3 +60,25 @@ class CatalogOut(BaseModel):
     exam_name: str
     weights_source: str
     areas: list[AreaOut]
+
+
+class ProjectionOut(BaseModel):
+    """O plano cabe até a prova? E, se não cabe, o que oferecer ao aluno."""
+
+    fits: bool
+    exam_date: date
+    days_left: int
+    planned_minutes: int
+    available_minutes: int
+    missing_minutes: int
+    extra_minutes_per_day: int
+    #: Subtemas que não couberam, do menos prioritário para o mais prioritário.
+    unscheduled_topics: list[str]
+
+
+class ReplanOut(BaseModel):
+    plan_version: int
+    summary: str
+    created: int
+    removed: int
+    fits: bool

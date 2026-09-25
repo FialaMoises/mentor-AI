@@ -26,5 +26,20 @@
         ]
       }
     }
+  ],
+  "dataGroups": [
+    {
+      "name": "plano-do-dia",
+      "urls": [
+        "/api/v1/students/*/plan/today",
+        "/api/v1/catalog/*"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 20,
+        "maxAge": "1d",
+        "timeout": "3s"
+      }
+    }
   ]
 }

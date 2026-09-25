@@ -1,10 +1,19 @@
+@if (offline()) {
+  <p class="aviso-offline">
+    Sem conexão. Pode marcar à vontade — sobe sozinho quando a internet voltar.
+    @if (pendentes() > 0) {
+      <span>({{ pendentes() }} esperando)</span>
+    }
+  </p>
+}
+
 @if (loading()) {
   <p class="muted">Carregando a lista de hoje…</p>
 } @else if (plan(); as day) {
   <section class="head">
     <h1>Hoje</h1>
     <p class="muted">
-      {{ done() }} de {{ total() }} · {{ day.capacity_minutes }} min disponíveis
+      {{ done() }} de {{ total_tarefas() }} · {{ day.capacity_minutes }} min disponíveis
       @if (day.light) {
         · dia leve
       }
@@ -23,14 +32,30 @@
           <span class="topic">{{ task.topic }}</span>
           <span class="muted">{{ task.minutes }} min</span>
         </div>
-        <div class="task-actions">
-          <button type="button" (click)="mark(task, 'feita')" [disabled]="task.status === 'feita'">
-            Feito
-          </button>
-          <button type="button" class="ghost" (click)="mark(task, 'nao_deu')" [disabled]="task.status === 'nao_deu'">
-            Não deu
-          </button>
-        </div>
+
+        @if (lancando() === task.id) {
+          <div class="acertos">
+            <label>
+              acertei
+              <input type="number" min="0" [max]="total" [(ngModel)]="acertos" name="acertos" />
+            </label>
+            <label>
+              de
+              <input type="number" min="1" max="200" [(ngModel)]="total" name="total" />
+            </label>
+            <button type="button" (click)="confirmarAcertos(task)">Salvar</button>
+            <button type="button" class="ghost" (click)="pularAcertos(task)">Sem contar</button>
+          </div>
+        } @else {
+          <div class="task-actions">
+            <button type="button" (click)="marcar(task, 'feita')" [disabled]="task.status === 'feita'">
+              Feito
+            </button>
+            <button type="button" class="ghost" (click)="marcar(task, 'nao_deu')" [disabled]="task.status === 'nao_deu'">
+              Não deu
+            </button>
+          </div>
+        }
       </li>
     } @empty {
       <li class="muted">Nada planejado para hoje.</li>

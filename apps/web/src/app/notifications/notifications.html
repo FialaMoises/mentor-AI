@@ -1,0 +1,47 @@
+<h1>Avisos</h1>
+<p class="muted">Um toque por dia: a lista de hoje, e só o que precisa de decisão sua.</p>
+
+@if (erro()) {
+  <p class="alert">{{ erro() }}</p>
+}
+
+@switch (estado()) {
+  @case ('carregando') {
+    <p class="muted">Vendo o que dá para fazer neste aparelho…</p>
+  }
+  @case ('pronto') {
+    <button type="button" (click)="ativar()">Ativar notificações</button>
+  }
+  @case ('assinado') {
+    <p class="ok">Pronto. Você recebe a lista de hoje toda manhã.</p>
+  }
+  @case ('negado') {
+    <p class="alert">
+      O navegador bloqueou as notificações. Dá para liberar nas permissões do site e voltar aqui.
+    </p>
+  }
+  @case ('precisa_instalar') {
+    <p>No iPhone, as notificações só funcionam com o app instalado na tela de início.</p>
+  }
+  @case ('indisponivel') {
+    <p class="muted">
+      Este aparelho não aceita notificações agora. Você ainda recebe o aviso por e-mail, se tiver
+      cadastrado um.
+    </p>
+  }
+}
+
+@if (mostraGuiaIos()) {
+  <section class="guia">
+    <h2>Instalar no iPhone</h2>
+    <ol>
+      <li>Toque no botão de compartilhar, embaixo, no Safari.</li>
+      <li>Role e escolha <strong>Adicionar à Tela de Início</strong>.</li>
+      <li>Confirme em <strong>Adicionar</strong>.</li>
+      <li>Abra o mentor-AI pelo ícone novo e volte aqui para ativar os avisos.</li>
+    </ol>
+    <p class="muted">
+      Instalado, o app também guarda a lista do dia para abrir sem internet.
+    </p>
+  </section>
+}

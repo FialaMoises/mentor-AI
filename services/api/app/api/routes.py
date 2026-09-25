@@ -22,14 +22,13 @@ from ..models import (
     TOPIC_LEVEL_TEMA,
     DailyCapacity,
     Exam,
-    Proficiency,
-    ProgressEvent,
     Student,
     Task,
     Topic,
     TopicIncidence,
 )
 from ..planning import PlanningError, primary_exam, project, replan
+from ..progress import apply_progress
 from ..schemas import (
     AreaOut,
     CatalogOut,
@@ -199,28 +198,14 @@ def mark_progress(
     if task is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "tarefa não encontrada")
 
-    task.status = payload.action
-    session.add(
-        ProgressEvent(
-            task_id=task.id,
-            action=payload.action,
-            answered=payload.answered,
-            correct=payload.correct,
-        )
+    apply_progress(
+        session,
+        task,
+        action=payload.action,
+        answered=payload.answered,
+        correct=payload.correct,
+        client_event_id=payload.client_event_id,
     )
-
-    if payload.answered:
-        proficiency = session.scalar(
-            select(Proficiency).where(
-                Proficiency.student_id == task.student_id,
-                Proficiency.topic_id == task.topic_id,
-            )
-        )
-        if proficiency is not None:
-            proficiency.answered += payload.answered
-            proficiency.correct += payload.correct or 0
-
-    session.flush()
     return PlanTaskOut(
         id=task.id,
         kind=task.kind,

@@ -21,6 +21,9 @@ dist/
 .angular/
 coverage/
 
+# arquivos enviados em desenvolvimento
+.uploads/
+
 # banco local e temporários
 *.db
 *.sqlite3

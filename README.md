@@ -23,6 +23,7 @@ services/api/             FastAPI, jobs e o motor
 db/migrations/            Alembic
   app/extraction/         LLM lendo a rotina, com a saída validada por schema
   app/documents/          upload, confirmação da semana e expurgo de retenção
+  app/storage/            object store: disco em dev, S3 em produção
   app/auth/               link mágico e sessões (só hash no banco)
   app/billing/            assinatura, pausa e webhook, atrás de uma porta
   app/metrics/            os números do piloto, tirados do histórico
@@ -81,9 +82,9 @@ caminho e cai para e-mail quando não há assinatura viva.
 
 ## Como testar do zero
 
-O MinIO do compose vem do `quay.io` com tag fixa: a MinIO retirou as imagens
-públicas do Docker Hub. Ele é dependência só de desenvolvimento — em produção o
-object store é S3 de verdade.
+Subir não depende de serviço externo nenhum: sem S3 configurado, os arquivos
+enviados vão para o disco (`STORAGE_DIR`, um volume no compose). Preencher as
+credenciais no `.env` faz o mesmo código falar com o S3, sem tocar em nada.
 
 ```bash
 cp .env.example .env

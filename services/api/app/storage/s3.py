@@ -38,9 +38,15 @@ class S3Store(ObjectStore):
 
 @lru_cache
 def get_store() -> ObjectStore:
+    """S3 quando há bucket configurado; disco no resto — sem serviço externo."""
+    settings = get_settings()
+    if not settings.s3_endpoint_url and not settings.s3_access_key:
+        from .filesystem import FileSystemStore
+
+        return FileSystemStore(settings.storage_dir)
+
     import boto3
 
-    settings = get_settings()
     client = boto3.client(
         "s3",
         endpoint_url=settings.s3_endpoint_url or None,

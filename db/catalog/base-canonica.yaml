@@ -1,0 +1,361 @@
+# Base canônica de temas do mentor-AI.
+#
+# Árvore de três níveis: área → tema → subtema. O `slug` é a identidade estável
+# entre este arquivo e o banco: renomear `name` é seguro, trocar `slug` cria
+# outro tema e descola o histórico de progresso dos alunos.
+#
+# O peso de um subtema é o produto dos pesos da área, do tema e dele mesmo
+# (ausente = 1.0), normalizado para o maior valer 1.0. Todo peso carrega origem:
+# enquanto não houver curadoria de provas anteriores, vale o peso uniforme
+# declarado em `weights.default_source`.
+
+version: 1
+
+exam:
+  slug: enamed
+  name: ENAMED — Exame Nacional de Avaliação da Formação Médica
+  authority: Inep/MEC
+  notes: >-
+    Prova objetiva de 100 questões. A nota é usada pelo ENARE no acesso direto à
+    residência. A estrutura de sete áreas vem da matriz de referência do Inep.
+
+weights:
+  checked_at: 2026-09-25
+  default_source: >-
+    Matriz de referência do Inep (sete áreas). O ENAMED não publica distribuição
+    oficial de questões por área, então todas as áreas entram com peso uniforme
+    até a curadoria de provas anteriores.
+
+areas:
+  - slug: clinica-medica
+    name: Clínica Médica
+    temas:
+      - slug: cardiologia
+        name: Cardiologia
+        subtemas:
+          - { slug: insuficiencia-cardiaca, name: Insuficiência cardíaca }
+          - { slug: sindromes-coronarianas-agudas, name: Síndromes coronarianas agudas }
+          - { slug: hipertensao-arterial, name: Hipertensão arterial sistêmica }
+          - { slug: arritmias, name: Arritmias e fibrilação atrial }
+      - slug: pneumologia
+        name: Pneumologia
+        subtemas:
+          - { slug: asma, name: Asma }
+          - { slug: dpoc, name: DPOC }
+          - { slug: pneumonias, name: Pneumonias }
+          - { slug: tromboembolismo-pulmonar, name: Tromboembolismo pulmonar }
+      - slug: nefrologia
+        name: Nefrologia
+        subtemas:
+          - { slug: injuria-renal-aguda, name: Injúria renal aguda }
+          - { slug: doenca-renal-cronica, name: Doença renal crônica }
+          - { slug: disturbios-hidroeletroliticos, name: Distúrbios hidroeletrolíticos }
+          - { slug: disturbios-acidobasicos, name: Distúrbios acidobásicos }
+      - slug: endocrinologia
+        name: Endocrinologia
+        subtemas:
+          - { slug: diabetes-mellitus, name: Diabetes mellitus }
+          - { slug: tireoidopatias, name: Tireoidopatias }
+          - { slug: obesidade-e-sindrome-metabolica, name: Obesidade e síndrome metabólica }
+          - { slug: dislipidemias, name: Dislipidemias }
+      - slug: gastroenterologia
+        name: Gastroenterologia
+        subtemas:
+          - { slug: doenca-ulcerosa-peptica, name: Doença ulcerosa péptica e H. pylori }
+          - { slug: hepatites-virais, name: Hepatites virais }
+          - { slug: cirrose-e-complicacoes, name: Cirrose e suas complicações }
+          - { slug: doencas-inflamatorias-intestinais, name: Doenças inflamatórias intestinais }
+      - slug: infectologia
+        name: Infectologia
+        subtemas:
+          - { slug: hiv-aids, name: HIV e aids }
+          - { slug: tuberculose, name: Tuberculose }
+          - { slug: sepse, name: Sepse }
+          - { slug: arboviroses, name: Arboviroses }
+      - slug: hematologia
+        name: Hematologia
+        subtemas:
+          - { slug: anemias, name: Anemias }
+          - { slug: disturbios-da-coagulacao, name: Distúrbios da coagulação }
+          - { slug: leucemias-e-linfomas, name: Leucemias e linfomas }
+      - slug: neurologia
+        name: Neurologia
+        subtemas:
+          - { slug: avc, name: Acidente vascular cerebral }
+          - { slug: cefaleias, name: Cefaleias }
+          - { slug: epilepsia, name: Epilepsia }
+          - { slug: sindromes-demenciais, name: Síndromes demenciais }
+      - slug: reumatologia
+        name: Reumatologia
+        subtemas:
+          - { slug: artrite-reumatoide, name: Artrite reumatoide }
+          - { slug: lupus, name: Lúpus eritematoso sistêmico }
+          - { slug: gota, name: Gota e artrites por cristais }
+          - { slug: osteoartrite, name: Osteoartrite }
+
+  - slug: cirurgia-geral
+    name: Cirurgia Geral
+    temas:
+      - slug: trauma
+        name: Trauma
+        subtemas:
+          - { slug: atendimento-inicial-ao-politraumatizado, name: Atendimento inicial ao politraumatizado }
+          - { slug: trauma-abdominal, name: Trauma abdominal }
+          - { slug: trauma-toracico, name: Trauma torácico }
+          - { slug: traumatismo-cranioencefalico, name: Traumatismo cranioencefálico }
+      - slug: abdome-agudo
+        name: Abdome agudo
+        subtemas:
+          - { slug: apendicite-aguda, name: Apendicite aguda }
+          - { slug: obstrucao-intestinal, name: Obstrução intestinal }
+          - { slug: abdome-agudo-perfurativo, name: Abdome agudo perfurativo }
+          - { slug: isquemia-mesenterica, name: Isquemia mesentérica }
+      - slug: vias-biliares-e-pancreas
+        name: Vias biliares e pâncreas
+        subtemas:
+          - { slug: colelitiase-e-colecistite, name: Colelitíase e colecistite }
+          - { slug: coledocolitiase-e-colangite, name: Coledocolitíase e colangite }
+          - { slug: pancreatite-aguda, name: Pancreatite aguda }
+      - slug: parede-abdominal
+        name: Parede abdominal
+        subtemas:
+          - { slug: hernias-inguinais, name: Hérnias inguinais e femorais }
+          - { slug: hernias-incisionais-e-umbilicais, name: Hérnias incisionais e umbilicais }
+      - slug: coloproctologia
+        name: Coloproctologia
+        subtemas:
+          - { slug: doenca-hemorroidaria, name: Doença hemorroidária }
+          - { slug: doenca-diverticular, name: Doença diverticular }
+          - { slug: cancer-colorretal, name: Câncer colorretal }
+      - slug: cirurgia-vascular
+        name: Cirurgia vascular
+        subtemas:
+          - { slug: doenca-arterial-periferica, name: Doença arterial obstrutiva periférica }
+          - { slug: trombose-venosa-profunda, name: Trombose venosa profunda }
+          - { slug: aneurisma-de-aorta-abdominal, name: Aneurisma de aorta abdominal }
+      - slug: urologia
+        name: Urologia
+        subtemas:
+          - { slug: litiase-urinaria, name: Litíase urinária }
+          - { slug: hiperplasia-prostatica-benigna, name: Hiperplasia prostática benigna }
+          - { slug: cancer-de-prostata, name: Câncer de próstata }
+      - slug: perioperatorio
+        name: Perioperatório
+        subtemas:
+          - { slug: avaliacao-pre-operatoria, name: Avaliação pré-operatória }
+          - { slug: complicacoes-pos-operatorias, name: Complicações pós-operatórias }
+          - { slug: queimaduras, name: Queimaduras }
+
+  - slug: ginecologia-e-obstetricia
+    name: Ginecologia e Obstetrícia
+    temas:
+      - slug: pre-natal
+        name: Pré-natal
+        subtemas:
+          - { slug: pre-natal-de-risco-habitual, name: Pré-natal de risco habitual }
+          - { slug: rastreios-e-vacinas-na-gestacao, name: Rastreios e vacinação na gestação }
+          - { slug: infeccoes-congenitas, name: Infecções congênitas }
+      - slug: obstetricia-de-alto-risco
+        name: Obstetrícia de alto risco
+        subtemas:
+          - { slug: sindromes-hipertensivas-da-gestacao, name: Síndromes hipertensivas da gestação }
+          - { slug: diabetes-na-gestacao, name: Diabetes na gestação }
+          - { slug: trabalho-de-parto-prematuro, name: Trabalho de parto prematuro }
+      - slug: sangramentos-na-gestacao
+        name: Sangramentos na gestação
+        subtemas:
+          - { slug: sangramentos-da-primeira-metade, name: Sangramentos da primeira metade }
+          - { slug: sangramentos-da-segunda-metade, name: Sangramentos da segunda metade }
+      - slug: parto-e-puerperio
+        name: Parto e puerpério
+        subtemas:
+          - { slug: assistencia-ao-parto, name: Assistência ao parto }
+          - { slug: hemorragia-pos-parto, name: Hemorragia pós-parto }
+          - { slug: puerperio, name: Puerpério }
+      - slug: ginecologia-endocrina
+        name: Ginecologia endócrina
+        subtemas:
+          - { slug: sangramento-uterino-anormal, name: Ciclo menstrual e sangramento uterino anormal }
+          - { slug: sindrome-dos-ovarios-policisticos, name: Síndrome dos ovários policísticos }
+          - { slug: climaterio, name: Climatério }
+      - slug: infeccoes-genitais
+        name: Infecções genitais
+        subtemas:
+          - { slug: corrimentos-vaginais, name: Corrimentos vaginais }
+          - { slug: doenca-inflamatoria-pelvica, name: Doença inflamatória pélvica }
+          - { slug: infeccoes-sexualmente-transmissiveis, name: Infecções sexualmente transmissíveis }
+      - slug: oncologia-ginecologica
+        name: Oncologia ginecológica
+        subtemas:
+          - { slug: cancer-de-colo-do-utero, name: Rastreio e câncer de colo do útero }
+          - { slug: cancer-de-mama, name: Câncer de mama }
+          - { slug: cancer-de-endometrio, name: Câncer de endométrio }
+      - slug: planejamento-reprodutivo
+        name: Planejamento reprodutivo
+        subtemas:
+          - { slug: metodos-contraceptivos, name: Métodos contraceptivos }
+          - { slug: infertilidade, name: Infertilidade }
+
+  - slug: pediatria
+    name: Pediatria
+    temas:
+      - slug: neonatologia
+        name: Neonatologia
+        subtemas:
+          - { slug: reanimacao-neonatal, name: Reanimação neonatal }
+          - { slug: ictericia-neonatal, name: Icterícia neonatal }
+          - { slug: prematuridade-e-baixo-peso, name: Prematuridade e baixo peso }
+          - { slug: sepse-neonatal, name: Sepse neonatal }
+      - slug: crescimento-e-desenvolvimento
+        name: Crescimento e desenvolvimento
+        subtemas:
+          - { slug: curvas-de-crescimento, name: Curvas de crescimento }
+          - { slug: marcos-do-desenvolvimento, name: Marcos do desenvolvimento }
+          - { slug: puberdade, name: Puberdade }
+      - slug: aleitamento-e-nutricao
+        name: Aleitamento e nutrição
+        subtemas:
+          - { slug: aleitamento-materno, name: Aleitamento materno }
+          - { slug: alimentacao-complementar, name: Alimentação complementar }
+          - { slug: desnutricao-e-carencias, name: Desnutrição e carências nutricionais }
+      - slug: imunizacao
+        name: Imunização
+        subtemas:
+          - { slug: calendario-vacinal, name: Calendário vacinal }
+          - { slug: vacinas-situacoes-especiais, name: Situações especiais e contraindicações }
+      - slug: infeccoes-respiratorias-na-infancia
+        name: Infecções respiratórias na infância
+        subtemas:
+          - { slug: infeccoes-de-vias-aereas-superiores, name: Infecções de vias aéreas superiores }
+          - { slug: pneumonia-na-infancia, name: Pneumonia na infância }
+          - { slug: bronquiolite, name: Bronquiolite }
+          - { slug: asma-na-infancia, name: Asma na infância }
+      - slug: diarreia-e-desidratacao
+        name: Diarreia e desidratação
+        subtemas:
+          - { slug: diarreia-aguda-e-reidratacao, name: Diarreia aguda e reidratação }
+          - { slug: parasitoses-intestinais, name: Parasitoses intestinais }
+      - slug: doencas-exantematicas
+        name: Doenças exantemáticas
+        subtemas:
+          - { slug: sarampo-e-rubeola, name: Sarampo e rubéola }
+          - { slug: varicela, name: Varicela }
+          - { slug: escarlatina-e-kawasaki, name: Escarlatina e doença de Kawasaki }
+      - slug: emergencias-pediatricas
+        name: Emergências pediátricas
+        subtemas:
+          - { slug: crise-convulsiva-febril, name: Crise convulsiva febril }
+          - { slug: acidentes-e-intoxicacoes, name: Acidentes e intoxicações }
+          - { slug: violencia-e-maus-tratos, name: Violência e maus-tratos na infância }
+
+  - slug: medicina-de-familia-e-comunidade
+    name: Medicina de Família e Comunidade
+    temas:
+      - slug: atributos-da-aps
+        name: Atributos da atenção primária
+        subtemas:
+          - { slug: acesso-e-longitudinalidade, name: Acesso e longitudinalidade }
+          - { slug: coordenacao-do-cuidado, name: Coordenação do cuidado }
+          - { slug: territorio-e-adscricao, name: Território e adscrição }
+      - slug: abordagem-familiar
+        name: Abordagem familiar
+        subtemas:
+          - { slug: ferramentas-de-abordagem-familiar, name: Ferramentas de abordagem familiar }
+          - { slug: visita-domiciliar, name: Visita domiciliar }
+      - slug: condicoes-cronicas-na-aps
+        name: Condições crônicas na APS
+        subtemas:
+          - { slug: hipertensao-e-diabetes-na-aps, name: Hipertensão e diabetes na APS }
+          - { slug: multimorbidade-e-polifarmacia, name: Multimorbidade e polifarmácia }
+          - { slug: tabagismo-e-alcool-na-aps, name: Tabagismo e álcool na APS }
+      - slug: cuidado-ao-longo-da-vida
+        name: Cuidado ao longo da vida
+        subtemas:
+          - { slug: puericultura-na-aps, name: Puericultura na APS }
+          - { slug: saude-da-mulher-na-aps, name: Saúde da mulher na APS }
+          - { slug: saude-do-idoso-e-fragilidade, name: Saúde do idoso e fragilidade }
+      - slug: urgencias-na-aps
+        name: Urgências na APS
+        subtemas:
+          - { slug: classificacao-de-risco, name: Classificação de risco }
+          - { slug: referencia-e-contrarreferencia, name: Referência e contrarreferência }
+      - slug: prevencao-quaternaria
+        name: Prevenção quaternária
+        subtemas:
+          - { slug: rastreios-e-sobrediagnostico, name: Rastreios e sobrediagnóstico }
+          - { slug: medicina-baseada-em-evidencias, name: Medicina baseada em evidências na prática }
+
+  - slug: saude-mental
+    name: Saúde Mental
+    temas:
+      - slug: transtornos-de-humor
+        name: Transtornos de humor
+        subtemas:
+          - { slug: depressao, name: Depressão }
+          - { slug: transtorno-bipolar, name: Transtorno bipolar }
+      - slug: transtornos-de-ansiedade
+        name: Transtornos de ansiedade
+        subtemas:
+          - { slug: ansiedade-generalizada-e-panico, name: Ansiedade generalizada e pânico }
+          - { slug: toc-e-estresse-pos-traumatico, name: TOC e estresse pós-traumático }
+      - slug: psicoses
+        name: Psicoses
+        subtemas:
+          - { slug: esquizofrenia, name: Esquizofrenia }
+          - { slug: primeiro-episodio-psicotico, name: Primeiro episódio psicótico }
+      - slug: alcool-e-outras-drogas
+        name: Álcool e outras drogas
+        subtemas:
+          - { slug: transtornos-por-uso-de-substancias, name: Transtornos por uso de substâncias }
+          - { slug: sindromes-de-abstinencia, name: Síndromes de abstinência }
+      - slug: urgencias-psiquiatricas
+        name: Urgências psiquiátricas
+        subtemas:
+          - { slug: avaliacao-de-risco-de-suicidio, name: Avaliação de risco de suicídio }
+          - { slug: agitacao-psicomotora, name: Agitação psicomotora }
+      - slug: saude-mental-na-aps
+        name: Saúde mental na APS
+        subtemas:
+          - { slug: raps-e-rede-de-atencao, name: RAPS e rede de atenção psicossocial }
+          - { slug: psicofarmacos-na-aps, name: Psicofármacos na APS }
+
+  - slug: saude-coletiva
+    name: Saúde Coletiva
+    temas:
+      - slug: epidemiologia
+        name: Epidemiologia
+        subtemas:
+          - { slug: medidas-de-frequencia, name: Medidas de frequência }
+          - { slug: medidas-de-associacao, name: Medidas de associação }
+          - { slug: tipos-de-estudo, name: Tipos de estudo }
+      - slug: bioestatistica
+        name: Bioestatística
+        subtemas:
+          - { slug: testes-diagnosticos, name: Testes diagnósticos }
+          - { slug: significancia-e-intervalo-de-confianca, name: Significância e intervalo de confiança }
+      - slug: vigilancia-em-saude
+        name: Vigilância em saúde
+        subtemas:
+          - { slug: notificacao-compulsoria, name: Doenças de notificação compulsória }
+          - { slug: investigacao-de-surtos, name: Investigação de surtos }
+          - { slug: vigilancia-sanitaria-e-ambiental, name: Vigilância sanitária e ambiental }
+      - slug: sus-e-politicas-de-saude
+        name: SUS e políticas de saúde
+        subtemas:
+          - { slug: principios-e-diretrizes-do-sus, name: Princípios e diretrizes do SUS }
+          - { slug: financiamento-e-gestao, name: Financiamento e gestão }
+          - { slug: redes-de-atencao-a-saude, name: Redes de atenção à saúde }
+      - slug: indicadores-de-saude
+        name: Indicadores de saúde
+        subtemas:
+          - { slug: mortalidade-e-natalidade, name: Indicadores de mortalidade e natalidade }
+          - { slug: sistemas-de-informacao-em-saude, name: Sistemas de informação em saúde }
+      - slug: etica-e-bioetica
+        name: Ética e bioética
+        subtemas:
+          - { slug: sigilo-e-consentimento, name: Sigilo e consentimento }
+          - { slug: codigo-de-etica-medica, name: Código de Ética Médica }
+      - slug: saude-do-trabalhador
+        name: Saúde do trabalhador
+        subtemas:
+          - { slug: acidentes-e-doencas-do-trabalho, name: Acidentes e doenças do trabalho }

@@ -13,6 +13,7 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 - Motor de planejamento: pacote puro em `services/api/app/engine/`
 - Extração: LLM com saída validada por JSON Schema (`services/api/app/extraction/`)
 - Banco: Postgres, migrations com Alembic (`db/migrations/`)
+- Base canônica de temas: YAML versionado em `db/catalog/`, carregado por `python -m app.catalog`
 - Arquivos: S3
 
 ## Regras não negociáveis
@@ -35,7 +36,13 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 7. **Segredos só em variável de ambiente.** `.env.example` versionado, `.env`
    nunca.
 8. **Migrations desde o primeiro commit.** Nenhum schema criado à mão.
-9. **Nada entra na `main` com CI vermelho.**
+9. **O `slug` de um tema é identidade, não rótulo.** Renomear o `name` no
+   catálogo é seguro; trocar o `slug` cria outro tema e descola o histórico de
+   progresso dos alunos.
+10. **Peso sem fonte não entra na base.** Toda incidência carrega `source` e
+   `checked_at`; enquanto não houver curadoria de provas anteriores, vale o peso
+   uniforme declarado no catálogo.
+11. **Nada entra na `main` com CI vermelho.**
 
 ## Idioma
 

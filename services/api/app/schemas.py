@@ -35,3 +35,28 @@ class ProgressIn(BaseModel):
         if self.answered is not None and self.correct is not None and self.correct > self.answered:
             raise ValueError("acertos não podem passar das questões feitas")
         return self
+
+
+class SubtemaOut(BaseModel):
+    slug: str
+    name: str
+    incidence: float
+
+
+class TemaOut(BaseModel):
+    slug: str
+    name: str
+    subtemas: list[SubtemaOut]
+
+
+class AreaOut(BaseModel):
+    slug: str
+    name: str
+    temas: list[TemaOut]
+
+
+class CatalogOut(BaseModel):
+    exam: str
+    exam_name: str
+    weights_source: str
+    areas: list[AreaOut]

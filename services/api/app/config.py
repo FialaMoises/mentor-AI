@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     engine_inactivity_days: int = 5
     default_timezone: str = "America/Fortaleza"
 
-    # Object store: MinIO em desenvolvimento, S3 em produção.
+    # Object store. Sem S3 configurado, os arquivos vão para o disco em
+    # `storage_dir` — desenvolvimento não depende de serviço externo nenhum.
+    storage_dir: str = "./.uploads"
     s3_endpoint_url: str = ""
     s3_bucket: str = "mentor-ai-uploads"
     s3_access_key: str = ""

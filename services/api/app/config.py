@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     engine_k: float = 10.0
     engine_review_offsets_days: str = "1,7,30"
     engine_inactivity_days: int = 5
+    #: Teto físico do dia para estudo, antes de descontar compromisso.
+    engine_study_window_minutes: int = 600
     default_timezone: str = "America/Fortaleza"
 
     # Object store. Sem S3 configurado, os arquivos vão para o disco em

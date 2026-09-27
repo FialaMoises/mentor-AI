@@ -67,7 +67,12 @@ def capacities_from_commitments(
     daily_budget_minutes: int,
     params: EngineParams | None = None,
 ) -> list[DayCapacity]:
-    """Desconta os compromissos do orçamento diário de estudo.
+    """Quanto sobra para estudar em cada dia.
+
+    São duas contas diferentes. O orçamento diário é a meta que o aluno se pôs
+    ("quero estudar 14 horas por semana"); a janela de estudo é o quanto do dia
+    dá para usar. O compromisso come a janela, não a meta: seis horas de
+    enfermaria ainda deixam as duas horas de estudo de pé, doze de plantão não.
 
     O dia seguinte a um plantão longo vira dia leve, mesmo que esteja livre: o
     aluno acabou de virar a noite.
@@ -79,7 +84,8 @@ def capacities_from_commitments(
     saída: list[DayCapacity] = []
     for day in sorted(days):
         ocupado = busy_minutes(commitments, day)
-        livre = max(0, daily_budget_minutes - ocupado)
+        sobra_do_dia = max(0, params.study_window_minutes - ocupado)
+        livre = min(daily_budget_minutes, sobra_do_dia)
         véspera = day - timedelta(days=1)
         leve = any(c.is_long_shift and c.happens_on(véspera) for c in commitments)
         saída.append(DayCapacity(day=day, free_minutes=livre, light=leve))

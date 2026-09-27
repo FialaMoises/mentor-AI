@@ -7,7 +7,9 @@ import json
 from typing import Any, Protocol
 
 from ..config import get_settings
-from .prompt import SYSTEM, user_prompt
+from .demo import demo_routine
+from .office import OFFICE_TYPES, OfficeError, text_from_office
+from .prompt import SYSTEM, file_as_data, user_prompt
 
 
 class ExtractionError(RuntimeError):
@@ -28,6 +30,17 @@ class FakeExtractor(ExtractionProvider):
     def extract(self, *, content: bytes, content_type: str, kind: str) -> dict[str, Any]:
         self.calls.append((kind, content_type, len(content)))
         return self.payload
+
+
+class DemoExtractor(ExtractionProvider):
+    """Sem chave do modelo: devolve a rotina de exemplo e avisa que não leu nada.
+
+    Serve para testar a conferência da semana e o replanejamento sem depender de
+    serviço externo. O aviso vai em `unreadable`, que a tela mostra ao aluno.
+    """
+
+    def extract(self, *, content: bytes, content_type: str, kind: str) -> dict[str, Any]:
+        return demo_routine(kind)
 
 
 def _json_from_text(texto: str) -> dict[str, Any]:
@@ -70,6 +83,13 @@ class AnthropicExtractor(ExtractionProvider):
                 "type": "image",
                 "source": {"type": "base64", "media_type": content_type, "data": dados},
             }
+        if content_type in OFFICE_TYPES:
+            # Word e Excel não sobem como documento: mandamos o texto de dentro.
+            try:
+                texto = text_from_office(content, content_type)
+            except OfficeError as erro:
+                raise ExtractionError(str(erro)) from erro
+            return {"type": "text", "text": file_as_data(texto)}
         raise ExtractionError(
             f"{content_type} precisa virar PDF ou imagem antes de ir para o modelo"
         )
@@ -98,5 +118,5 @@ class AnthropicExtractor(ExtractionProvider):
 def get_provider() -> ExtractionProvider:
     settings = get_settings()
     if not settings.anthropic_api_key:
-        return FakeExtractor()
+        return DemoExtractor()
     return AnthropicExtractor()

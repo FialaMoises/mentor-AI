@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.billing import start_trial
+from app.clock import today_in
 from app.config import get_settings
 from app.metrics import collect
 from app.models import Document, PlanVersion, ProgressEvent, Student, Task
@@ -15,7 +16,8 @@ from app.seed import SEED_STUDENT_ID
 from app.seed import run as seed
 from app.storage import InMemoryStore
 
-HOJE = date(2026, 9, 25)
+#: O relógio anda: a rota lê o dia de hoje de verdade, então o seed usa o mesmo dia.
+HOJE = today_in(get_settings().default_timezone)
 
 
 @pytest.fixture

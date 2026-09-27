@@ -1,0 +1,148 @@
+{
+  "commitments": [
+    {
+      "kind": "aula",
+      "label": "Clínica Médica — enfermaria",
+      "weekday": 0,
+      "duration_minutes": 360,
+      "ends_on": "2026-12-18"
+    },
+    {
+      "kind": "aula",
+      "label": "Clínica Médica — enfermaria",
+      "weekday": 1,
+      "duration_minutes": 360,
+      "ends_on": "2026-12-18"
+    },
+    {
+      "kind": "aula",
+      "label": "Clínica Médica — enfermaria",
+      "weekday": 2,
+      "duration_minutes": 360,
+      "ends_on": "2026-12-18"
+    },
+    {
+      "kind": "aula",
+      "label": "Clínica Médica — enfermaria",
+      "weekday": 3,
+      "duration_minutes": 360,
+      "ends_on": "2026-12-18"
+    },
+    {
+      "kind": "aula",
+      "label": "Clínica Médica — enfermaria",
+      "weekday": 4,
+      "duration_minutes": 360,
+      "ends_on": "2026-12-18"
+    },
+    {
+      "kind": "aula",
+      "label": "Ambulatório de Pediatria",
+      "weekday": 1,
+      "duration_minutes": 240,
+      "ends_on": "2026-12-18"
+    },
+    {
+      "kind": "aula",
+      "label": "Discussão de casos",
+      "weekday": 3,
+      "duration_minutes": 120,
+      "ends_on": "2026-12-18"
+    },
+    {
+      "kind": "plantao",
+      "label": "Plantão — PS adulto",
+      "on_day": "2026-10-03",
+      "duration_minutes": 720
+    },
+    {
+      "kind": "plantao",
+      "label": "Plantão — PS adulto",
+      "on_day": "2026-10-11",
+      "duration_minutes": 720
+    },
+    {
+      "kind": "plantao",
+      "label": "Plantão — PS pediátrico",
+      "on_day": "2026-10-16",
+      "duration_minutes": 720
+    },
+    {
+      "kind": "plantao",
+      "label": "Plantão — PS adulto",
+      "on_day": "2026-10-24",
+      "duration_minutes": 720
+    },
+    {
+      "kind": "plantao",
+      "label": "Plantão — PS adulto",
+      "on_day": "2026-10-27",
+      "duration_minutes": 720
+    },
+    {
+      "kind": "plantao",
+      "label": "Plantão — PS adulto",
+      "on_day": "2026-10-31",
+      "duration_minutes": 720
+    },
+    {
+      "kind": "aula",
+      "label": "Cursinho — aula ao vivo",
+      "weekday": 5,
+      "duration_minutes": 240,
+      "starts_on": "2026-09-05",
+      "ends_on": "2026-11-15"
+    },
+    {
+      "kind": "aula",
+      "label": "Cursinho — revisão guiada",
+      "weekday": 6,
+      "duration_minutes": 120,
+      "starts_on": "2026-09-05",
+      "ends_on": "2026-11-15"
+    },
+    {
+      "kind": "trabalho",
+      "label": "Monitoria de Semiologia",
+      "weekday": 1,
+      "duration_minutes": 120
+    },
+    {
+      "kind": "trabalho",
+      "label": "Aulas particulares",
+      "weekday": 5,
+      "duration_minutes": 180
+    },
+    {
+      "kind": "academia",
+      "label": "Musculação",
+      "weekday": 0,
+      "duration_minutes": 75
+    },
+    {
+      "kind": "academia",
+      "label": "Musculação",
+      "weekday": 2,
+      "duration_minutes": 75
+    },
+    {
+      "kind": "academia",
+      "label": "Musculação",
+      "weekday": 4,
+      "duration_minutes": 75
+    },
+    {
+      "kind": "academia",
+      "label": "Corrida leve",
+      "weekday": 6,
+      "duration_minutes": 60
+    }
+  ],
+  "exams": [
+    {
+      "name": "ENAMED 2026",
+      "exam_date": "2026-11-22"
+    }
+  ],
+  "unreadable": []
+}

@@ -20,6 +20,7 @@ from ..engine import capacities_from_commitments, daily_budget
 from ..extraction.provider import ExtractionError, ExtractionProvider
 from ..extraction.schema import RoutineExtraction
 from ..models import Commitment, Consent, DailyCapacity, Document, Student, TargetExam
+from ..params import engine_params
 from ..planning import replan
 from ..storage import (
     ALLOWED_CONTENT_TYPES,
@@ -167,7 +168,10 @@ def rebuild_capacities(session: Session, student: Student, start: date, end: dat
     )
     dias = [start + timedelta(days=d) for d in range((end - start).days + 1)]
     capacidades = capacities_from_commitments(
-        dias, _engine_commitments(compromissos), daily_budget(student.weekly_hours)
+        dias,
+        _engine_commitments(compromissos),
+        daily_budget(student.weekly_hours),
+        engine_params(),
     )
 
     existentes = {

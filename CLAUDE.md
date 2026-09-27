@@ -13,7 +13,7 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
 - Motor de planejamento: pacote puro em `services/api/app/engine/`
 - Ponte entre banco e motor: `services/api/app/planning/`; jobs em `app/jobs/`
 - Extração com LLM: `app/extraction/`; upload, confirmação e expurgo: `app/documents/`
-- Arquivos: object store em `app/storage/` (MinIO em dev, S3 em produção)
+- Arquivos: object store em `app/storage/` (disco em dev, S3 em produção)
 - Progresso e fila offline: `app/progress/`; notificações: `app/notifications/`
 - Sessão do aluno: `app/auth/`; assinatura: `app/billing/`; painel: `app/metrics/`
 - Extração: LLM com saída validada por JSON Schema (`services/api/app/extraction/`)
@@ -32,8 +32,9 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
    nunca altera a lista que o aluno já abriu. Replanejar apaga só tarefas
    pendentes: feita e não deu são histórico.
 4. **Parâmetros de calibração** (k, intervalos de revisão, limiar de
-   inatividade, durações padrão) ficam em configuração, nunca como constantes
-   espalhadas pelo código.
+   inatividade, janela de estudo, durações padrão) ficam em configuração, nunca
+   como constantes espalhadas pelo código — e configuração que ninguém lê é bug:
+   quem traduz `Settings` em `EngineParams` é `app/params.py`.
 5. **Saída de LLM é dado não confiável.** Sempre validada por JSON Schema antes
    de tocar o banco, e o conteúdo do arquivo do aluno nunca é tratado como
    instrução. O prompt vive em `app/extraction/prompt.py` para poder ser revisado.
@@ -63,7 +64,13 @@ https://claude.ai/code/artifact/9856f5d0-f2b6-4410-8507-ed6fc7e96f9f
    dois eventos. A fila offline depende disso.
 15. **Quem lê o relógio é a borda.** A data entra no motor e no job por
    argumento — `app/clock.py` é o único lugar que chama `datetime.now`.
-16. **Nada entra na `main` com CI vermelho.**
+16. **Compromisso come a janela do dia, não a meta de estudo.** A meta é o
+   que o aluno se propôs; a janela é o quanto do dia dá para usar. Seis horas de
+   enfermaria ainda deixam as duas horas de estudo de pé; doze de plantão, não.
+17. **Arquivo do aluno não sobe cru para o modelo se não for PDF ou imagem.**
+   Word e Excel passam por `app/extraction/office.py`, que tira o texto com teto
+   de tamanho e sem parser de XML com DTD.
+18. **Nada entra na `main` com CI vermelho.**
 
 ## Idioma
 

@@ -28,6 +28,7 @@ db/migrations/            Alembic
   app/billing/            assinatura, pausa e webhook, atrás de uma porta
   app/metrics/            os números do piloto, tirados do histórico
 db/catalog/               base canônica de temas, versionada em YAML
+exemplos/                 arquivos de uma aluna fictícia, para testar o upload
 .claude/agents/           teste, validação, code review e segurança
 ```
 
@@ -108,9 +109,15 @@ Para testar o cadastro de um aluno novo, peça o link para um e-mail qualquer
 (`voce@exemplo.com`), pegue no log e siga o fluxo: questionário, aviso de
 privacidade, upload da rotina, conferência da semana.
 
-Sem `ANTHROPIC_API_KEY`, a extração usa o dublê e devolve rotina vazia — dá para
-conferir a tela, não a leitura do arquivo. Com a chave no `.env` e um `docker
-compose up -d` depois, o upload passa a ler o arquivo de verdade.
+Para subir rotina, a pasta `exemplos/` tem os arquivos de uma aluna fictícia
+nos cinco formatos aceitos — grade em PDF, escala em XLSX, academia e trabalho
+em DOCX, e duas fotos. O `exemplos/README.md` explica o que cada um traz.
+
+Sem `ANTHROPIC_API_KEY`, ninguém lê o arquivo: a API devolve a rotina de exemplo
+e avisa isso na tela de conferência, de modo que o resto do fluxo — conferir a
+semana, recalcular a capacidade, replanejar — dá para testar mesmo assim. Com a
+chave no `.env` e um `docker compose up -d` depois, o upload passa a ler o
+arquivo de verdade.
 
 Para o painel do piloto, ponha `ADMIN_TOKEN` no `.env`, suba de novo e abra
 http://localhost:4200/admin.
@@ -141,8 +148,10 @@ semana mais sete dias; depois o expurgo apaga o arquivo e mantém só o JSON
 extraído. O aluno pode apagar qualquer documento antes disso.
 
 Na extração, o conteúdo do arquivo é tratado como dado, nunca como instrução, e
-a resposta do modelo passa por JSON Schema antes de tocar o banco. Sem
-`ANTHROPIC_API_KEY`, a API usa um dublê e não chama serviço externo nenhum.
+a resposta do modelo passa por JSON Schema antes de tocar o banco. Word e Excel
+não sobem como arquivo: a API tira o texto de dentro deles primeiro, com teto de
+tamanho e sem parser de XML com DTD. Sem `ANTHROPIC_API_KEY`, a API devolve uma
+rotina de exemplo, avisa que não leu nada e não chama serviço externo nenhum.
 
 O aluno baixa tudo o que guardamos dele em `/conta` e pode apagar a conta por
 ali — o que leva junto plano, progresso e arquivos.

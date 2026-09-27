@@ -14,9 +14,9 @@ from sqlalchemy.orm import Session
 
 from ..clock import today_in
 from ..db import SessionLocal
-from ..engine import EngineParams
 from ..models import Student, TargetExam
 from ..notifications import Senders, notify_daily_list, notify_overflow, notify_restart
+from ..params import engine_params
 from ..planning import PlanningError, is_inactive, project
 
 
@@ -32,7 +32,7 @@ def run(
         )
     )
 
-    params = EngineParams()
+    params = engine_params()
     resumos: list[str] = []
     for aluno in alunos:
         hoje = today_for(aluno.timezone)

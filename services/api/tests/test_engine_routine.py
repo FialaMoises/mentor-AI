@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.engine import Commitment, capacities_from_commitments, daily_budget
+from app.engine import Commitment, EngineParams, capacities_from_commitments, daily_budget
 
 SEGUNDA = date(2026, 9, 28)
 
@@ -13,20 +13,41 @@ def semana() -> list[date]:
     return [SEGUNDA + timedelta(days=d) for d in range(7)]
 
 
-def test_compromisso_semanal_desconta_so_no_dia_da_semana() -> None:
+def test_compromisso_que_cabe_na_janela_nao_derruba_a_meta_do_dia() -> None:
+    """Quatro horas de aula ainda deixam as cinco horas de estudo de pé."""
     aula = Commitment(kind="aula", weekday=0, duration_minutes=240)
 
     dias = capacities_from_commitments(semana(), [aula], 300)
+
+    assert dias[0].free_minutes == 300
+    assert dias[1].free_minutes == 300
+
+
+def test_dia_cheio_corta_a_meta_pelo_que_sobra_do_dia() -> None:
+    """Nove horas de enfermaria: sobra uma da janela, e é ela que manda."""
+    enfermaria = Commitment(kind="aula", weekday=0, duration_minutes=540)
+
+    dias = capacities_from_commitments(semana(), [enfermaria], 300)
 
     assert dias[0].free_minutes == 60
     assert dias[1].free_minutes == 300
 
 
+def test_janela_de_estudo_e_parametro_de_calibracao() -> None:
+    enfermaria = Commitment(kind="aula", weekday=0, duration_minutes=540)
+    params = EngineParams(study_window_minutes=12 * 60)
+
+    dias = capacities_from_commitments(semana(), [enfermaria], 300, params)
+
+    assert dias[0].free_minutes == 180
+
+
 def test_compromissos_do_mesmo_dia_somam() -> None:
-    aula = Commitment(kind="aula", weekday=2, duration_minutes=180)
+    aula = Commitment(kind="aula", weekday=2, duration_minutes=360)
+    ambulatorio = Commitment(kind="aula", weekday=2, duration_minutes=120)
     academia = Commitment(kind="academia", weekday=2, duration_minutes=60)
 
-    dias = capacities_from_commitments(semana(), [aula, academia], 300)
+    dias = capacities_from_commitments(semana(), [aula, ambulatorio, academia], 300)
 
     assert dias[2].free_minutes == 60
 
@@ -71,12 +92,12 @@ def test_vigencia_limita_o_compromisso_ao_rodizio() -> None:
 
 
 def test_compromisso_de_data_unica_vale_so_naquele_dia() -> None:
-    prova = Commitment(kind="aula", on_day=SEGUNDA + timedelta(days=2), duration_minutes=180)
+    plantao = Commitment(kind="plantao", on_day=SEGUNDA + timedelta(days=2), duration_minutes=540)
 
-    dias = capacities_from_commitments(semana(), [prova], 300)
+    dias = capacities_from_commitments(semana(), [plantao], 300)
 
-    assert dias[2].free_minutes == 120
-    assert all(d.free_minutes == 300 for d in dias if d.day != prova.on_day)
+    assert dias[2].free_minutes == 60
+    assert all(d.free_minutes == 300 for d in dias if d.day != plantao.on_day)
 
 
 def test_compromisso_precisa_ser_semanal_ou_de_data_unica() -> None:
@@ -101,6 +122,13 @@ def test_compromisso_invalido_nao_e_aceito() -> None:
             starts_on=SEGUNDA,
             ends_on=SEGUNDA - timedelta(days=1),
         )
+
+
+def test_janela_de_estudo_invalida_e_recusada() -> None:
+    with pytest.raises(ValueError):
+        EngineParams(study_window_minutes=0)
+    with pytest.raises(ValueError):
+        EngineParams(study_window_minutes=25 * 60)
 
 
 def test_horas_por_semana_viram_minutos_por_dia() -> None:

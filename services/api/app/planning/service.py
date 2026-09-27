@@ -33,6 +33,7 @@ from ..models import (
     Task,
     TopicIncidence,
 )
+from ..params import engine_params
 
 #: Usado enquanto o aluno não subiu rotina nenhuma (a fase 3 traz os uploads).
 DEFAULT_FREE_MINUTES = 120
@@ -168,7 +169,7 @@ def project(
     from_tomorrow: bool = True,
 ) -> HorizonPlan:
     """Monta o plano sem gravar nada — usado para responder 'isso cabe até a prova?'."""
-    params = params or EngineParams()
+    params = params or engine_params()
     alvo = primary_exam(session, student)
     inicio = today + timedelta(days=1) if from_tomorrow else today
 
@@ -199,7 +200,7 @@ def replan(
     Só tarefas pendentes são apagadas: o que o aluno marcou como feito ou como
     não deu é histórico e fica onde está.
     """
-    params = params or EngineParams()
+    params = params or engine_params()
     alvo = primary_exam(session, student)
     inicio = today + timedelta(days=1) if from_tomorrow else today
 

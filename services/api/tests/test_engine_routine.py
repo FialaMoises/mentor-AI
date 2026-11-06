@@ -1,10 +1,16 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 import pytest
 
-from app.engine import Commitment, EngineParams, capacities_from_commitments, daily_budget
+from app.engine import (
+    Commitment,
+    EngineParams,
+    busy_minutes,
+    capacities_from_commitments,
+    daily_budget,
+)
 
 SEGUNDA = date(2026, 9, 28)
 
@@ -154,3 +160,42 @@ def test_compromisso_encerrado_nao_conta_mais() -> None:
     dias = capacities_from_commitments(semana(), [rodizio], 300)
 
     assert dias[0].free_minutes == 300
+
+
+def test_sobreposicao_com_horario_conta_uma_vez() -> None:
+    """Academia cadastrada à mão em cima de um bloco do arquivo não desconta em dobro."""
+    aula = Commitment(kind="aula", weekday=0, duration_minutes=120, starts_at=time(17, 0))
+    academia = Commitment(kind="academia", weekday=0, duration_minutes=75, starts_at=time(18, 0))
+
+    assert busy_minutes([aula, academia], SEGUNDA) == 135  # 17h00–19h15
+
+
+def test_compromisso_sem_horario_soma_como_antes() -> None:
+    aula = Commitment(kind="aula", weekday=0, duration_minutes=120, starts_at=time(17, 0))
+    leitura = Commitment(kind="leitura", weekday=0, duration_minutes=60)
+
+    assert busy_minutes([aula, leitura], SEGUNDA) == 180
+
+
+def test_intervalos_separados_somam() -> None:
+    manha = Commitment(kind="aula", weekday=0, duration_minutes=60, starts_at=time(7, 0))
+    noite = Commitment(kind="academia", weekday=0, duration_minutes=60, starts_at=time(18, 0))
+
+    assert busy_minutes([manha, noite], SEGUNDA) == 120
+
+
+def test_intervalo_contido_em_outro_nao_soma() -> None:
+    plantao = Commitment(kind="plantao", weekday=0, duration_minutes=720, starts_at=time(7, 0))
+    reuniao = Commitment(kind="trabalho", weekday=0, duration_minutes=60, starts_at=time(9, 0))
+
+    assert busy_minutes([plantao, reuniao], SEGUNDA) == 720
+
+
+def test_plantao_que_atravessa_a_meia_noite_conta_no_dia_em_que_comeca() -> None:
+    noturno = Commitment(kind="plantao", weekday=6, duration_minutes=720, starts_at=time(19, 0))
+
+    dias = capacities_from_commitments(semana() + [SEGUNDA + timedelta(days=7)], [noturno], 120)
+
+    assert dias[6].free_minutes == 0
+    assert dias[7].free_minutes == 120
+    assert dias[7].light

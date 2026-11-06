@@ -12,13 +12,14 @@ from sqlalchemy.orm import Session
 
 from ..auth import AuthError, logout, request_login, revoke_all, verify_login
 from ..billing import start_trial, subscription_of
-from ..clock import today_in
+from ..clock import monotonic, today_in
 from ..config import get_settings
 from ..db import get_session
 from ..deps import current_student, get_object_store, get_senders
 from ..documents import erase as erase_document
 from ..models import Commitment, Document, Proficiency, Student, TargetExam, Task
 from ..notifications import Message, Senders
+from ..ratelimit import get_rate_limiter, retry_after
 from ..storage import ObjectStore
 
 router = APIRouter(prefix="/api/v1")
@@ -70,6 +71,18 @@ def post_magic_link(
 ) -> dict[str, str]:
     """Manda o link. A resposta é a mesma para e-mail conhecido ou não."""
     settings = get_settings()
+    espera = get_rate_limiter().hit(
+        "login:" + str(payload.email).strip().lower(),
+        limit=settings.rate_limit_login_per_window,
+        window_seconds=settings.rate_limit_login_window_minutes * 60,
+        now=monotonic(),
+    )
+    if espera is not None:
+        raise HTTPException(
+            429,
+            f"muitos links pedidos para este e-mail; tente de novo em {retry_after(espera)} s",
+            headers={"Retry-After": retry_after(espera)},
+        )
     try:
         link = request_login(session, str(payload.email))
     except AuthError as erro:
@@ -159,6 +172,12 @@ def get_export(
                 "dia_da_semana": c.weekday,
                 "data": c.on_day.isoformat() if c.on_day else None,
                 "duracao_min": c.duration_minutes,
+                "inicio": c.starts_at.strftime("%H:%M") if c.starts_at else None,
+                "origem": "arquivo" if c.document_id else "manual",
+                "vigencia_inicio": c.starts_on.isoformat() if c.starts_on else None,
+                "vigencia_fim": c.ends_on.isoformat() if c.ends_on else None,
+                "editado_pelo_aluno": c.edited_by_student,
+                "serie": str(c.series_id) if c.series_id else None,
             }
             for c in session.scalars(select(Commitment).where(Commitment.student_id == student.id))
         ],

@@ -147,6 +147,7 @@ def test_upload_extrai_e_devolve_a_semana_para_conferir(
     assert corpo["status"] == "extraido"
     assert corpo["extracted"]["commitments"][0]["label"] == "Internato"
     assert corpo["original_kept"] is True
+    assert corpo["edited_blocks"] == 0
 
 
 def test_documento_de_outro_aluno_responde_404(

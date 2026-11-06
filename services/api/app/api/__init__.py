@@ -5,6 +5,7 @@ from .documents import router as documents_router
 from .onboarding import router as onboarding_router
 from .push import router as push_router
 from .routes import router as plan_router
+from .routine import router as routine_router
 
 #: Os routers da API, na ordem em que entram no app.
 routers = [
@@ -12,6 +13,7 @@ routers = [
     auth_router,
     onboarding_router,
     documents_router,
+    routine_router,
     push_router,
     billing_router,
     admin_router,
@@ -25,5 +27,6 @@ __all__ = [
     "onboarding_router",
     "plan_router",
     "push_router",
+    "routine_router",
     "routers",
 ]

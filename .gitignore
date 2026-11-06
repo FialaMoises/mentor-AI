@@ -29,3 +29,6 @@ coverage/
 *.sqlite3
 .DS_Store
 Thumbs.db
+
+# esboços e ledger dos agentes de brainstorming/plano
+.superpowers/

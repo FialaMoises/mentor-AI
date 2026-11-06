@@ -7,7 +7,7 @@ identificadores, com o termo da spec no comentário de cada tabela.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from sqlalchemy import (
     JSON,
@@ -19,10 +19,12 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Time,
     UniqueConstraint,
     Uuid,
     func,
 )
+from sqlalchemy import false as sa_false
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 TOPIC_LEVEL_AREA = 1
@@ -53,6 +55,9 @@ class Student(Base):
     timezone: Mapped[str] = mapped_column(String(64), default="America/Fortaleza")
     #: Horas de estudo por semana declaradas no questionário.
     weekly_hours: Mapped[int] = mapped_column(Integer, default=14)
+    #: Último dia em que o aluno mexeu na rotina pela tela Minha rotina. Acende o
+    #: aviso "mudanças valem a partir de amanhã" só no dia da mudança.
+    routine_changed_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     #: Reserva para quando o push não estiver disponível (iPhone sem app instalado).
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True, index=True)
     subscription_status: Mapped[str] = mapped_column(String(20), default="trial")
@@ -244,7 +249,7 @@ class ProgressEvent(Base):
 
 DOCUMENT_KINDS = ("grade", "escala", "cursinho", "outro")
 DOCUMENT_STATUSES = ("recebido", "extraido", "confirmado", "falhou")
-COMMITMENT_KINDS = ("aula", "plantao", "academia", "trabalho", "outro")
+COMMITMENT_KINDS = ("aula", "plantao", "academia", "trabalho", "leitura", "outro")
 
 
 class Consent(Base):
@@ -317,6 +322,15 @@ class Commitment(Base):
     duration_minutes: Mapped[int] = mapped_column(Integer)
     starts_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    #: Horário de início, para a agenda. O motor usa a duração e, com horário,
+    #: conta sobreposição uma vez só.
+    starts_at: Mapped[time | None] = mapped_column(Time, nullable=True)
+    #: Agrupa os registros de um mesmo compromisso semanal (um por dia da semana).
+    series_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True, index=True)
+    #: Bloco que veio de arquivo e o aluno alterou à mão na tela Minha rotina.
+    edited_by_student: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=sa_false()
+    )
 
     __table_args__ = (
         CheckConstraint(f"kind in {COMMITMENT_KINDS}", name="ck_commitment_kind"),

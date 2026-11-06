@@ -13,6 +13,12 @@ questionário, sobe a rotina, recebe o plano até a prova, marca a lista do dia
 (inclusive offline) e administra a própria assinatura — com o botão de pausar
 ao lado do de cancelar. O painel em `/admin` mostra os números do piloto.
 
+Em `/rotina` (Minha rotina), o aluno vê a semana numa agenda com horário —
+grade de sete dias em tela larga, um dia por vez no celular — e adiciona, edita
+ou apaga compromissos à mão: academia, leitura, trabalho, o dentista de quinta.
+Toda mudança vale de amanhã em diante e replaneja o estudo; a lista de hoje não
+muda. Embaixo de cada dia aparece quanto sobra para estudar.
+
 Não existe rota com id de aluno na URL: o aluno vem sempre da sessão. Quem pede
 uma tarefa ou um documento de outra pessoa recebe 404.
 
@@ -107,7 +113,9 @@ entra e leva direto para a lista de hoje.
 
 Para testar o cadastro de um aluno novo, peça o link para um e-mail qualquer
 (`voce@exemplo.com`), pegue no log e siga o fluxo: questionário, aviso de
-privacidade, upload da rotina, conferência da semana.
+privacidade, upload da rotina, conferência da semana. Depois, em `/rotina`,
+acrescente o que não estava em arquivo nenhum (academia, leitura) e veja o
+"estudo: Xh" de cada dia mudar.
 
 Para subir rotina, a pasta `exemplos/` tem os arquivos de uma aluna fictícia
 nos cinco formatos aceitos — grade em PDF, escala em XLSX, academia e trabalho
@@ -139,6 +147,15 @@ O painel do piloto responde em `/admin`, protegido por `ADMIN_TOKEN`:
 ```bash
 curl.exe -H "x-admin-token: SEU_TOKEN" http://localhost:8000/api/v1/admin/metrics
 ```
+
+## Limite de frequência
+
+A API inteira tem limite por aluno (pelo token da sessão) ou, sem login, por IP:
+120 requisições por minuto e 30 escritas por minuto. O link mágico aceita 5
+pedidos por e-mail a cada 15 minutos. Passou do limite, a resposta é 429 com
+`Retry-After`. `/health` e o webhook de cobrança ficam de fora. Os números moram
+no `.env` (`RATE_LIMIT_*`). A contagem é em memória, por processo: com mais de
+uma réplica da API, ela precisa passar para um armazenamento compartilhado.
 
 ## Arquivos do aluno e privacidade
 

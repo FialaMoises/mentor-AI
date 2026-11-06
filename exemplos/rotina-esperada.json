@@ -5,85 +5,98 @@
       "label": "Clínica Médica — enfermaria",
       "weekday": 0,
       "duration_minutes": 360,
-      "ends_on": "2026-12-18"
+      "ends_on": "2026-12-18",
+      "starts_at": "07:00"
     },
     {
       "kind": "aula",
       "label": "Clínica Médica — enfermaria",
       "weekday": 1,
       "duration_minutes": 360,
-      "ends_on": "2026-12-18"
+      "ends_on": "2026-12-18",
+      "starts_at": "07:00"
     },
     {
       "kind": "aula",
       "label": "Clínica Médica — enfermaria",
       "weekday": 2,
       "duration_minutes": 360,
-      "ends_on": "2026-12-18"
+      "ends_on": "2026-12-18",
+      "starts_at": "07:00"
     },
     {
       "kind": "aula",
       "label": "Clínica Médica — enfermaria",
       "weekday": 3,
       "duration_minutes": 360,
-      "ends_on": "2026-12-18"
+      "ends_on": "2026-12-18",
+      "starts_at": "07:00"
     },
     {
       "kind": "aula",
       "label": "Clínica Médica — enfermaria",
       "weekday": 4,
       "duration_minutes": 360,
-      "ends_on": "2026-12-18"
+      "ends_on": "2026-12-18",
+      "starts_at": "07:00"
     },
     {
       "kind": "aula",
       "label": "Ambulatório de Pediatria",
       "weekday": 1,
       "duration_minutes": 240,
-      "ends_on": "2026-12-18"
+      "ends_on": "2026-12-18",
+      "starts_at": "14:00"
     },
     {
       "kind": "aula",
       "label": "Discussão de casos",
       "weekday": 3,
       "duration_minutes": 120,
-      "ends_on": "2026-12-18"
+      "ends_on": "2026-12-18",
+      "starts_at": "14:00"
     },
     {
       "kind": "plantao",
       "label": "Plantão — PS adulto",
       "on_day": "2026-10-03",
-      "duration_minutes": 720
+      "duration_minutes": 720,
+      "starts_at": "07:00"
     },
     {
       "kind": "plantao",
       "label": "Plantão — PS adulto",
       "on_day": "2026-10-11",
-      "duration_minutes": 720
+      "duration_minutes": 720,
+      "starts_at": "07:00"
     },
     {
       "kind": "plantao",
       "label": "Plantão — PS pediátrico",
       "on_day": "2026-10-16",
-      "duration_minutes": 720
+      "duration_minutes": 720,
+      "starts_at": "19:00"
     },
     {
       "kind": "plantao",
       "label": "Plantão — PS adulto",
       "on_day": "2026-10-24",
-      "duration_minutes": 720
+      "duration_minutes": 720,
+      "starts_at": "07:00"
     },
     {
       "kind": "plantao",
       "label": "Plantão — PS adulto",
       "on_day": "2026-10-27",
-      "duration_minutes": 720
+      "duration_minutes": 720,
+      "starts_at": "19:00"
     },
     {
       "kind": "plantao",
       "label": "Plantão — PS adulto",
       "on_day": "2026-10-31",
-      "duration_minutes": 720
+      "duration_minutes": 720,
+      "starts_at": "07:00"
     },
     {
       "kind": "aula",
@@ -91,7 +104,8 @@
       "weekday": 5,
       "duration_minutes": 240,
       "starts_on": "2026-09-05",
-      "ends_on": "2026-11-15"
+      "ends_on": "2026-11-15",
+      "starts_at": "14:00"
     },
     {
       "kind": "aula",
@@ -99,43 +113,50 @@
       "weekday": 6,
       "duration_minutes": 120,
       "starts_on": "2026-09-05",
-      "ends_on": "2026-11-15"
+      "ends_on": "2026-11-15",
+      "starts_at": "10:00"
     },
     {
       "kind": "trabalho",
       "label": "Monitoria de Semiologia",
       "weekday": 1,
-      "duration_minutes": 120
+      "duration_minutes": 120,
+      "starts_at": "18:00"
     },
     {
       "kind": "trabalho",
       "label": "Aulas particulares",
       "weekday": 5,
-      "duration_minutes": 180
+      "duration_minutes": 180,
+      "starts_at": "09:00"
     },
     {
       "kind": "academia",
       "label": "Musculação",
       "weekday": 0,
-      "duration_minutes": 75
+      "duration_minutes": 75,
+      "starts_at": "20:00"
     },
     {
       "kind": "academia",
       "label": "Musculação",
       "weekday": 2,
-      "duration_minutes": 75
+      "duration_minutes": 75,
+      "starts_at": "20:00"
     },
     {
       "kind": "academia",
       "label": "Musculação",
       "weekday": 4,
-      "duration_minutes": 75
+      "duration_minutes": 75,
+      "starts_at": "20:00"
     },
     {
       "kind": "academia",
       "label": "Corrida leve",
       "weekday": 6,
-      "duration_minutes": 60
+      "duration_minutes": 60,
+      "starts_at": "08:00"
     }
   ],
   "exams": [

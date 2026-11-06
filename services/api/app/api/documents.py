@@ -12,7 +12,15 @@ from sqlalchemy.orm import Session
 from ..clock import today_in
 from ..db import get_session
 from ..deps import current_student, get_extraction_provider, get_object_store
-from ..documents import ConsentMissing, DocumentError, confirm, erase, extract, upload
+from ..documents import (
+    ConsentMissing,
+    DocumentError,
+    confirm,
+    edited_blocks,
+    erase,
+    extract,
+    upload,
+)
 from ..extraction import ExtractionProvider, RoutineExtraction
 from ..models import Document, Student
 from ..storage import MAX_UPLOAD_BYTES, ObjectStore
@@ -33,6 +41,8 @@ class DocumentOut(BaseModel):
     error: str
     extracted: RoutineExtraction | None
     original_kept: bool
+    #: Blocos deste arquivo que o aluno editou na rotina; reconfirmar substitui.
+    edited_blocks: int
 
 
 class ConfirmOut(BaseModel):
@@ -42,7 +52,7 @@ class ConfirmOut(BaseModel):
     replan_summary: str
 
 
-def _to_out(document: Document) -> DocumentOut:
+def _to_out(document: Document, session: Session) -> DocumentOut:
     extraido = (
         RoutineExtraction.model_validate(document.extracted)
         if document.extracted is not None
@@ -56,6 +66,7 @@ def _to_out(document: Document) -> DocumentOut:
         error=document.error,
         extracted=extraido,
         original_kept=document.storage_key is not None,
+        edited_blocks=edited_blocks(session, document),
     )
 
 
@@ -98,7 +109,7 @@ async def post_document(
         raise HTTPException(UNPROCESSABLE, str(erro)) from erro
 
     extract(session, documento, store=store, provider=provider)
-    return _to_out(documento)
+    return _to_out(documento, session)
 
 
 @router.get("/documents/{document_id}", response_model=DocumentOut)
@@ -107,7 +118,7 @@ def get_document(
     student: Annotated[Student, Depends(current_student)],
     session: Annotated[Session, Depends(get_session)],
 ) -> DocumentOut:
-    return _to_out(_document_of(document_id, session, student))
+    return _to_out(_document_of(document_id, session, student), session)
 
 
 @router.post("/documents/{document_id}/confirm", response_model=ConfirmOut)
@@ -125,7 +136,7 @@ def post_confirm(
         raise HTTPException(UNPROCESSABLE, str(erro)) from erro
 
     return ConfirmOut(
-        document=_to_out(resultado.document),
+        document=_to_out(resultado.document, session),
         commitments=resultado.commitments,
         days_recalculated=resultado.days_recalculated,
         replan_summary=resultado.replan_summary,

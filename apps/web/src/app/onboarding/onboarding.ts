@@ -144,6 +144,10 @@ export class Onboarding {
     this.atualizarCompromisso(indice, { weekday: Number(valor) });
   }
 
+  protected mudarInicio(indice: number, valor: string): void {
+    this.atualizarCompromisso(indice, { starts_at: valor || null });
+  }
+
   protected mudarDuracao(indice: number, valor: string): void {
     this.atualizarCompromisso(indice, { duration_minutes: Number(valor) });
   }

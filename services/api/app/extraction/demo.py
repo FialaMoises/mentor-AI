@@ -24,6 +24,7 @@ FACULDADE: list[dict[str, Any]] = [
         "label": "Clínica Médica — enfermaria",
         "weekday": dia,
         "duration_minutes": 360,
+        "starts_at": "07:00",
         "ends_on": "2026-12-18",
     }
     for dia in range(5)
@@ -33,6 +34,7 @@ FACULDADE: list[dict[str, Any]] = [
         "label": "Ambulatório de Pediatria",
         "weekday": 1,
         "duration_minutes": 240,
+        "starts_at": "14:00",
         "ends_on": "2026-12-18",
     },
     {
@@ -40,19 +42,26 @@ FACULDADE: list[dict[str, Any]] = [
         "label": "Discussão de casos",
         "weekday": 3,
         "duration_minutes": 120,
+        "starts_at": "14:00",
         "ends_on": "2026-12-18",
     },
 ]
 
 PLANTOES: list[dict[str, Any]] = [
-    {"kind": "plantao", "label": f"Plantão — {setor}", "on_day": dia, "duration_minutes": 720}
-    for dia, setor in [
-        ("2026-10-03", "PS adulto"),
-        ("2026-10-11", "PS adulto"),
-        ("2026-10-16", "PS pediátrico"),
-        ("2026-10-24", "PS adulto"),
-        ("2026-10-27", "PS adulto"),
-        ("2026-10-31", "PS adulto"),
+    {
+        "kind": "plantao",
+        "label": f"Plantão — {setor}",
+        "on_day": dia,
+        "duration_minutes": 720,
+        "starts_at": entrada,
+    }
+    for dia, setor, entrada in [
+        ("2026-10-03", "PS adulto", "07:00"),
+        ("2026-10-11", "PS adulto", "07:00"),
+        ("2026-10-16", "PS pediátrico", "19:00"),
+        ("2026-10-24", "PS adulto", "07:00"),
+        ("2026-10-27", "PS adulto", "19:00"),
+        ("2026-10-31", "PS adulto", "07:00"),
     ]
 ]
 
@@ -62,6 +71,7 @@ CURSINHO: list[dict[str, Any]] = [
         "label": "Cursinho — aula ao vivo",
         "weekday": 5,
         "duration_minutes": 240,
+        "starts_at": "14:00",
         "starts_on": "2026-09-05",
         "ends_on": "2026-11-15",
     },
@@ -70,18 +80,55 @@ CURSINHO: list[dict[str, Any]] = [
         "label": "Cursinho — revisão guiada",
         "weekday": 6,
         "duration_minutes": 120,
+        "starts_at": "10:00",
         "starts_on": "2026-09-05",
         "ends_on": "2026-11-15",
     },
 ]
 
 FORA_DA_FACULDADE: list[dict[str, Any]] = [
-    {"kind": "trabalho", "label": "Monitoria de Semiologia", "weekday": 1, "duration_minutes": 120},
-    {"kind": "trabalho", "label": "Aulas particulares", "weekday": 5, "duration_minutes": 180},
-    {"kind": "academia", "label": "Musculação", "weekday": 0, "duration_minutes": 75},
-    {"kind": "academia", "label": "Musculação", "weekday": 2, "duration_minutes": 75},
-    {"kind": "academia", "label": "Musculação", "weekday": 4, "duration_minutes": 75},
-    {"kind": "academia", "label": "Corrida leve", "weekday": 6, "duration_minutes": 60},
+    {
+        "kind": "trabalho",
+        "label": "Monitoria de Semiologia",
+        "weekday": 1,
+        "duration_minutes": 120,
+        "starts_at": "18:00",
+    },
+    {
+        "kind": "trabalho",
+        "label": "Aulas particulares",
+        "weekday": 5,
+        "duration_minutes": 180,
+        "starts_at": "09:00",
+    },
+    {
+        "kind": "academia",
+        "label": "Musculação",
+        "weekday": 0,
+        "duration_minutes": 75,
+        "starts_at": "20:00",
+    },
+    {
+        "kind": "academia",
+        "label": "Musculação",
+        "weekday": 2,
+        "duration_minutes": 75,
+        "starts_at": "20:00",
+    },
+    {
+        "kind": "academia",
+        "label": "Musculação",
+        "weekday": 4,
+        "duration_minutes": 75,
+        "starts_at": "20:00",
+    },
+    {
+        "kind": "academia",
+        "label": "Corrida leve",
+        "weekday": 6,
+        "duration_minutes": 60,
+        "starts_at": "08:00",
+    },
 ]
 
 POR_TIPO: dict[str, list[dict[str, Any]]] = {

@@ -6,12 +6,12 @@ recusado, e valor fora da faixa derruba a extração inteira.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, time
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-CommitmentKind = Literal["aula", "plantao", "academia", "trabalho", "outro"]
+CommitmentKind = Literal["aula", "plantao", "academia", "trabalho", "leitura", "outro"]
 
 
 class ExtractedCommitment(BaseModel):
@@ -24,6 +24,8 @@ class ExtractedCommitment(BaseModel):
     duration_minutes: int = Field(ge=1, le=24 * 60)
     starts_on: date | None = None
     ends_on: date | None = None
+    #: Horário de início ("HH:MM"), só quando o arquivo disser.
+    starts_at: time | None = None
 
     @model_validator(mode="after")
     def semanal_ou_data_unica(self) -> ExtractedCommitment:

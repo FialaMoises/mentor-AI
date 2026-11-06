@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 from .types import DayCapacity, EngineParams
 
@@ -30,6 +30,9 @@ class Commitment:
     on_day: date | None = None
     starts_on: date | None = None
     ends_on: date | None = None
+    #: Horário de início, quando se sabe. Serve à agenda e à conta de sobreposição;
+    #: um compromisso que atravessa a meia-noite conta inteiro no dia em que começa.
+    starts_at: time | None = None
 
     def __post_init__(self) -> None:
         if self.duration_minutes <= 0:
@@ -58,7 +61,30 @@ class Commitment:
 
 
 def busy_minutes(commitments: Sequence[Commitment], day: date) -> int:
-    return sum(c.duration_minutes for c in commitments if c.happens_on(day))
+    """Minutos ocupados no dia.
+
+    Compromissos com horário que se sobrepõem contam uma vez só (união dos
+    intervalos); os sem horário somam a duração inteira, como sempre.
+    """
+    do_dia = [c for c in commitments if c.happens_on(day)]
+    sem_horario = sum(c.duration_minutes for c in do_dia if c.starts_at is None)
+
+    intervalos = sorted(
+        (inicio, inicio + c.duration_minutes)
+        for c in do_dia
+        if c.starts_at is not None
+        for inicio in [c.starts_at.hour * 60 + c.starts_at.minute]
+    )
+    com_horario = 0
+    fim_atual = -1
+    for inicio, fim in intervalos:
+        if inicio >= fim_atual:
+            com_horario += fim - inicio
+            fim_atual = fim
+        elif fim > fim_atual:
+            com_horario += fim - fim_atual
+            fim_atual = fim
+    return sem_horario + com_horario
 
 
 def capacities_from_commitments(
@@ -71,7 +97,8 @@ def capacities_from_commitments(
 
     São duas contas diferentes. O orçamento diário é a meta que o aluno se pôs
     ("quero estudar 14 horas por semana"); a janela de estudo é o quanto do dia
-    dá para usar. O compromisso come a janela, não a meta: seis horas de
+    dá para usar. O compromisso come a janela, não a meta (sobreposição com
+    horário conta uma vez, ver `busy_minutes`): seis horas de
     enfermaria ainda deixam as duas horas de estudo de pé, doze de plantão não.
 
     O dia seguinte a um plantão longo vira dia leve, mesmo que esteja livre: o

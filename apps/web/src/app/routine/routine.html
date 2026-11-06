@@ -1,0 +1,121 @@
+<header class="cabeca">
+  <h1>Minha rotina</h1>
+  <p class="muted">O que ocupa a sua semana. O plano de estudo se ajusta ao que sobra.</p>
+
+  <div class="barra">
+    <button type="button" class="anterior ghost" (click)="mudarSemana(-1)">‹ anterior</button>
+    <span class="periodo">{{ periodo() }}</span>
+    <button type="button" class="proxima ghost" (click)="mudarSemana(1)">próxima ›</button>
+  </div>
+
+  <div class="barra">
+    <button type="button" class="adicionar" (click)="adicionar()">+ adicionar</button>
+    <a routerLink="/comecar">enviar arquivo novo</a>
+  </div>
+</header>
+
+@if (resumo(); as texto) {
+  <p class="resumo">{{ texto }}</p>
+}
+@if (erro(); as texto) {
+  <p class="alert">{{ texto }}</p>
+}
+
+@for (e of edicoes(); track e) {
+  <app-commitment-form
+    [inicial]="e.inicial"
+    [salvando]="salvando()"
+    [online]="!offline()"
+    (salvar)="salvar($event)"
+    (apagar)="apagar()"
+    (cancelar)="fechar()"
+  />
+}
+
+@if (semana(); as s) {
+  <nav class="abas" aria-label="Dias da semana">
+    @for (dia of s.days; track dia.day; let i = $index) {
+      <button
+        type="button"
+        class="aba"
+        [class.atual]="i === diaSelecionado()"
+        (click)="diaSelecionado.set(i)"
+      >
+        {{ diasCurtos[i] }}
+      </button>
+    }
+  </nav>
+
+  <div class="grade">
+    <div class="horas" aria-hidden="true">
+      <div class="dia-nome"></div>
+      <div class="sem-horario" [style.min-height.rem]="faixaSemHorario()"></div>
+      <div class="linha-do-tempo" [style.height.px]="alturaDia">
+        @for (h of horas; track h) {
+          <span class="hora" [style.top.px]="h * horaPx">{{ h }}h</span>
+        }
+      </div>
+    </div>
+
+    @for (dia of s.days; track dia.day; let i = $index) {
+      <section
+        class="dia"
+        [class.selecionado]="i === diaSelecionado()"
+        [class.hoje]="dia.day === s.today"
+      >
+        <h3 class="dia-nome">{{ diasCurtos[i] }} {{ diaMes(dia.day) }}</h3>
+
+        <div class="sem-horario" [style.min-height.rem]="faixaSemHorario()">
+          @for (item of semHorario(dia); track item.series_id) {
+            <button type="button" class="bloco chip {{ item.kind }}" (click)="abrir(item)">
+              {{ item.label || item.kind }} · {{ item.duration_minutes }}min
+            </button>
+          }
+        </div>
+
+        <div
+          class="linha-do-tempo"
+          [style.height.px]="alturaDia"
+          [style.background-size]="'100% ' + horaPx + 'px'"
+        >
+          @for (b of blocos(i); track $index) {
+            @if (b.continua) {
+              <div
+                class="continua {{ b.item.kind }}"
+                [style.top.px]="b.topo"
+                [style.height.px]="b.altura"
+              >
+                {{ b.item.label || b.item.kind }} · até {{ fim(b.item) }}
+              </div>
+            } @else {
+              <button
+                type="button"
+                class="bloco {{ b.item.kind }}"
+                [class.travado]="!b.item.editable"
+                [style.top.px]="b.topo"
+                [style.height.px]="b.altura"
+                (click)="abrir(b.item)"
+              >
+                <strong>{{ b.item.label || b.item.kind }}</strong>
+                <span>{{ b.item.starts_at }}–{{ fim(b.item) }}</span>
+              </button>
+            }
+          }
+        </div>
+
+        <p
+          class="rodape"
+          [class.zero]="!dia.light && dia.free_minutes <= 0"
+          [class.leve]="dia.light"
+        >
+          {{ rodape(dia) }}
+        </p>
+        @if (dia.day === s.today && s.changed_today) {
+          <p class="nota">mudanças valem a partir de amanhã</p>
+        }
+      </section>
+    }
+  </div>
+} @else if (carregando()) {
+  <p class="muted">Carregando a sua semana…</p>
+}

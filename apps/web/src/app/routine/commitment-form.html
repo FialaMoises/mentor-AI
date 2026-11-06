@@ -1,0 +1,145 @@
+<form class="formulario" (submit)="enviar($event)">
+  <h2>{{ editando() ? 'Editar compromisso' : 'Novo compromisso' }}</h2>
+  @if (inicial()?.origem; as origem) {
+    <p class="muted">veio de: {{ origem }}</p>
+  }
+
+  <label>
+    Tipo
+    <select class="tipo" [value]="tipo()" (change)="tipo.set($any(valor($event)))">
+      @for (t of tipos; track t.valor) {
+        <option [value]="t.valor" [selected]="t.valor === tipo()">{{ t.nome }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Nome
+    <input
+      class="nome"
+      maxlength="160"
+      placeholder="Musculação, leitura antes de dormir…"
+      [value]="nome()"
+      (input)="nome.set(valor($event))"
+    />
+  </label>
+
+  <fieldset class="quando">
+    <legend>Quando</legend>
+    <label class="opcao">
+      <input
+        type="radio"
+        name="modo"
+        value="semana"
+        [checked]="modo() === 'semana'"
+        (change)="modo.set('semana')"
+      />
+      Toda semana
+    </label>
+    <label class="opcao">
+      <input
+        type="radio"
+        name="modo"
+        value="unica"
+        [checked]="modo() === 'unica'"
+        (change)="modo.set('unica')"
+      />
+      Só uma vez
+    </label>
+
+    @if (modo() === 'semana') {
+      <div class="dias">
+        @for (dia of dias; track dia; let i = $index) {
+          <label class="dia-opcao">
+            <input
+              type="checkbox"
+              class="dia-semana"
+              [checked]="diasMarcados().includes(i)"
+              (change)="alternarDia(i)"
+            />
+            {{ dia }}
+          </label>
+        }
+      </div>
+    } @else {
+      <input type="date" class="data" [value]="data()" (input)="data.set(valor($event))" />
+    }
+  </fieldset>
+
+  <div class="linha">
+    <label>
+      Início
+      <input type="time" class="inicio" [value]="inicio()" (input)="inicio.set(valor($event))" />
+    </label>
+    <label>
+      Fim
+      <input
+        type="time"
+        class="fim"
+        [disabled]="!inicio()"
+        [value]="fim()"
+        (input)="mudarFim(valor($event))"
+      />
+    </label>
+    <label>
+      Duração (min)
+      <input
+        type="number"
+        class="duracao"
+        min="1"
+        max="1440"
+        step="5"
+        [value]="duracao()"
+        (input)="duracao.set(+valor($event))"
+      />
+    </label>
+  </div>
+
+  @if (modo() === 'semana') {
+    <details class="mais">
+      <summary>mais opções</summary>
+      <div class="linha">
+        <label>
+          Vale de
+          <input
+            type="date"
+            class="vigencia-de"
+            [value]="vigenciaDe()"
+            (input)="vigenciaDe.set(valor($event))"
+          />
+        </label>
+        <label>
+          até
+          <input
+            type="date"
+            class="vigencia-ate"
+            [value]="vigenciaAte()"
+            (input)="vigenciaAte.set(valor($event))"
+          />
+        </label>
+      </div>
+    </details>
+  }
+
+  @if (!online()) {
+    <p class="aviso">Sem conexão: dá para olhar, mas salvar só com internet.</p>
+  }
+
+  <div class="acoes">
+    <button type="button" class="salvar" [disabled]="!podeSalvar()" (click)="enviar($event)">
+      Salvar
+    </button>
+    @if (editando()) {
+      <button
+        type="button"
+        class="apagar ghost"
+        [disabled]="!online() || salvando()"
+        (click)="apagar.emit()"
+      >
+        Apagar
+      </button>
+    }
+    <button type="button" class="cancelar ghost" (click)="cancelar.emit()">Cancelar</button>
+  </div>
+  <p class="muted pequeno">A mudança vale de amanhã em diante. A lista de hoje não muda.</p>
+</form>

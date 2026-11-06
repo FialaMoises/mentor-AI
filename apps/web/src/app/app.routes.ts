@@ -19,6 +19,11 @@ export const routes: Routes = [
     loadComponent: () => import('./onboarding/onboarding').then((m) => m.Onboarding),
   },
   {
+    path: 'rotina',
+    canActivate: [authGuard],
+    loadComponent: () => import('./routine/routine').then((m) => m.Routine),
+  },
+  {
     path: 'avisos',
     canActivate: [authGuard],
     loadComponent: () => import('./notifications/notifications').then((m) => m.Notifications),

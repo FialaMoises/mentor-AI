@@ -15,6 +15,7 @@ from app.extraction import FakeExtractor
 from app.main import app
 from app.models import Base, Student
 from app.notifications import NullEmailSender, NullPushSender, Senders
+from app.ratelimit import get_rate_limiter
 from app.storage import InMemoryStore
 
 
@@ -82,3 +83,11 @@ def login(session: Session):  # type: ignore[no-untyped-def]
         return {"Authorization": f"Bearer {entrada.token}"}
 
     return _login
+
+
+@pytest.fixture(autouse=True)
+def limite_zerado() -> Iterator[None]:
+    """Cada teste começa com o limite de frequência vazio."""
+    get_rate_limiter().reset()
+    yield
+    get_rate_limiter().reset()

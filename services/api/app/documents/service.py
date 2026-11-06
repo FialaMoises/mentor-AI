@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from ..engine import Commitment as EngineCommitment
 from ..engine import capacities_from_commitments, daily_budget
 from ..extraction.provider import ExtractionError, ExtractionProvider
-from ..extraction.schema import RoutineExtraction
+from ..extraction.schema import ExtractedCommitment, RoutineExtraction
 from ..models import Commitment, Consent, DailyCapacity, Document, Student, TargetExam
 from ..params import engine_params
 from ..planning import replan
@@ -144,7 +144,8 @@ def extract(
     return document
 
 
-def _engine_commitments(rows: list[Commitment]) -> list[EngineCommitment]:
+def engine_commitments(rows: list[Commitment]) -> list[EngineCommitment]:
+    """Linhas do banco viram compromissos do motor."""
     return [
         EngineCommitment(
             kind=row.kind,
@@ -153,9 +154,39 @@ def _engine_commitments(rows: list[Commitment]) -> list[EngineCommitment]:
             on_day=row.on_day,
             starts_on=row.starts_on,
             ends_on=row.ends_on,
+            starts_at=row.starts_at,
         )
         for row in rows
     ]
+
+
+def edited_blocks(session: Session, document: Document) -> int:
+    """Quantos compromissos deste documento o aluno alterou à mão na rotina.
+
+    A tela de conferência avisa antes de reconfirmar: confirmar de novo
+    substitui essas edições.
+    """
+    series = session.scalars(
+        select(Commitment.series_id).where(
+            Commitment.document_id == document.id,
+            Commitment.edited_by_student.is_(True),
+        )
+    )
+    return len(set(series))
+
+
+def _series_key(item: ExtractedCommitment) -> tuple[object, ...] | None:
+    """O mesmo bloco em dias diferentes da semana é uma série só."""
+    if item.weekday is None:
+        return None
+    return (
+        item.kind,
+        item.label,
+        item.starts_at,
+        item.duration_minutes,
+        item.starts_on,
+        item.ends_on,
+    )
 
 
 def rebuild_capacities(session: Session, student: Student, start: date, end: date) -> int:
@@ -169,7 +200,7 @@ def rebuild_capacities(session: Session, student: Student, start: date, end: dat
     dias = [start + timedelta(days=d) for d in range((end - start).days + 1)]
     capacidades = capacities_from_commitments(
         dias,
-        _engine_commitments(compromissos),
+        engine_commitments(compromissos),
         daily_budget(student.weekly_hours),
         engine_params(),
     )
@@ -215,7 +246,19 @@ def confirm(
     session.execute(sql_delete(Commitment).where(Commitment.document_id == document.id))
     session.flush()
 
+    series: dict[tuple[object, ...], uuid.UUID] = {}
+    #: O mesmo bloco duas vezes no mesmo dia (manhã e tarde, sem horário) vira duas
+    #: séries: a n-ésima ocorrência de cada dia vai para a n-ésima série.
+    ocorrencias: dict[tuple[object, ...], int] = {}
     for extraido in extraction.commitments:
+        chave = _series_key(extraido)
+        if chave is None:
+            serie = uuid.uuid4()
+        else:
+            por_dia = (*chave, extraido.weekday)
+            ordem = ocorrencias.get(por_dia, 0)
+            ocorrencias[por_dia] = ordem + 1
+            serie = series.setdefault((*chave, ordem), uuid.uuid4())
         session.add(
             Commitment(
                 student_id=student.id,
@@ -227,6 +270,8 @@ def confirm(
                 duration_minutes=extraido.duration_minutes,
                 starts_on=extraido.starts_on,
                 ends_on=extraido.ends_on,
+                starts_at=extraido.starts_at,
+                series_id=serie,
             )
         )
 

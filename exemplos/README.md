@@ -23,8 +23,12 @@ da planilha, que no XLSX são números.
 
 ## Como usar
 
-Na tela de conferência da rotina (`/rotina`), escolha o tipo, selecione o
+Na tela de conferência da rotina (`/comecar`), escolha o tipo, selecione o
 arquivo e confira a semana que aparecer.
+
+Depois de confirmar, a semana aparece em `/rotina` (Minha rotina), já com os
+horários. Ali dá para corrigir um bloco à mão ou acrescentar o que não está em
+arquivo nenhum.
 
 **Com `ANTHROPIC_API_KEY` no `.env`:** o modelo lê o arquivo de verdade. É o
 caminho que interessa testar — inclusive o que ele erra.

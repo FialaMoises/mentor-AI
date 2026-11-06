@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     price_monthly_cents: int = 4900
     price_annual_cents: int = 47000
 
+    # Limite de frequência, por aluno (ou por IP, sem login). Sem isso, um script
+    # replaneja o plano inteiro centenas de vezes por minuto.
+    rate_limit_per_minute: int = 120
+    rate_limit_writes_per_minute: int = 30
+    #: Pedidos de link mágico por e-mail dentro da janela abaixo.
+    rate_limit_login_per_window: int = 5
+    rate_limit_login_window_minutes: int = 15
+
     # Painel do piloto. Sem token, o painel não abre para ninguém.
     admin_token: str = ""
 

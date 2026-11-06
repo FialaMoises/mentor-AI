@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,7 +11,7 @@ from app.billing import start_trial
 from app.clock import today_in
 from app.config import get_settings
 from app.metrics import collect
-from app.models import Document, PlanVersion, ProgressEvent, Student, Task
+from app.models import Commitment, Document, PlanVersion, ProgressEvent, Student, Task
 from app.seed import SEED_STUDENT_ID
 from app.seed import run as seed
 from app.storage import InMemoryStore
@@ -198,13 +198,52 @@ def test_apagar_a_conta_leva_tudo_junto(
             size_bytes=10,
         )
     )
+    session.add(
+        Commitment(
+            student_id=aluno.id,
+            kind="academia",
+            label="Musculação",
+            weekday=0,
+            duration_minutes=60,
+        )
+    )
     api_store.put("chave", b"conteudo", "application/pdf")
     session.commit()
     cabecalho = login(aluno)
 
     assert client.delete("/api/v1/me", headers=cabecalho).status_code == 204
+    assert not list(session.scalars(select(Commitment)))
 
     assert session.get(Student, aluno.id) is None
     assert not list(session.scalars(select(Task)))
     assert len(api_store) == 0
     assert client.get("/api/v1/me", headers=cabecalho).status_code == 401
+
+
+def test_exportacao_traz_horario_e_origem_do_compromisso(
+    client: TestClient,
+    session: Session,
+    aluno: Student,
+    login,  # type: ignore[no-untyped-def]
+) -> None:
+    session.add(
+        Commitment(
+            student_id=aluno.id,
+            kind="academia",
+            label="Musculação",
+            weekday=0,
+            duration_minutes=75,
+            starts_at=time(20, 0),
+        )
+    )
+    session.commit()
+
+    corpo = client.get("/api/v1/me/export", headers=login(aluno)).json()
+
+    academia = next(c for c in corpo["compromissos"] if c["descricao"] == "Musculação")
+    assert academia["inicio"] == "20:00"
+    assert academia["origem"] == "manual"
+    assert academia["vigencia_inicio"] is None
+    assert academia["vigencia_fim"] is None
+    assert academia["editado_pelo_aluno"] is False
+    assert "serie" in academia

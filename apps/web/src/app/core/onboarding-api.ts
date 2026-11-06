@@ -36,11 +36,13 @@ export interface AlunoCriado {
 }
 
 export interface CompromissoExtraido {
-  kind: 'aula' | 'plantao' | 'academia' | 'trabalho' | 'outro';
+  kind: 'aula' | 'plantao' | 'academia' | 'trabalho' | 'leitura' | 'outro';
   label: string;
   weekday: number | null;
   on_day: string | null;
   duration_minutes: number;
+  /** "HH:MM", só quando o arquivo disser. */
+  starts_at?: string | null;
   starts_on: string | null;
   ends_on: string | null;
 }
@@ -59,6 +61,8 @@ export interface DocumentoOut {
   error: string;
   extracted: RotinaExtraida | null;
   original_kept: boolean;
+  /** Blocos deste arquivo que o aluno editou na rotina; reconfirmar substitui. */
+  edited_blocks: number;
 }
 
 export interface ConfirmacaoOut {

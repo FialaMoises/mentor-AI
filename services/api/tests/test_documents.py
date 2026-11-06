@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 import pytest
 from sqlalchemy import select
@@ -11,6 +11,7 @@ from app.documents import (
     ConsentMissing,
     DocumentError,
     confirm,
+    edited_blocks,
     erase,
     extract,
     purge_expired,
@@ -18,6 +19,7 @@ from app.documents import (
     upload,
 )
 from app.extraction import FakeExtractor, RoutineExtraction
+from app.extraction.schema import ExtractedCommitment
 from app.models import Commitment, DailyCapacity, Document, Student, TargetExam
 from app.seed import SEED_STUDENT_ID
 from app.seed import run as seed
@@ -317,3 +319,162 @@ def test_exclusao_a_pedido_do_aluno_apaga_arquivo_e_registro(
     assert not list(
         session.scalars(select(Commitment).where(Commitment.document_id == documento_id))
     )
+
+
+SEMANA_COM_HORARIO = {
+    "commitments": [
+        {
+            "kind": "aula",
+            "label": "Enfermaria",
+            "weekday": 0,
+            "duration_minutes": 300,
+            "starts_at": "07:00",
+        },
+        {
+            "kind": "academia",
+            "label": "Musculação",
+            "weekday": 0,
+            "duration_minutes": 75,
+            "starts_at": "18:00",
+        },
+        {
+            "kind": "academia",
+            "label": "Musculação",
+            "weekday": 2,
+            "duration_minutes": 75,
+            "starts_at": "18:00",
+        },
+        {
+            "kind": "academia",
+            "label": "Musculação",
+            "weekday": 4,
+            "duration_minutes": 75,
+            "starts_at": "18:00",
+        },
+        {
+            "kind": "outro",
+            "label": "Dentista",
+            "on_day": "2026-10-08",
+            "duration_minutes": 60,
+            "starts_at": "14:00",
+        },
+    ],
+    "exams": [],
+    "unreadable": [],
+}
+
+
+def _confirma_semana(session: Session, aluno: Student, store: InMemoryStore) -> Document:
+    documento = sobe(session, aluno, store)
+    confirm(
+        session,
+        documento,
+        extraction=RoutineExtraction.model_validate(SEMANA_COM_HORARIO),
+        today=HOJE,
+    )
+    session.flush()
+    return documento
+
+
+def _do_documento(session: Session, documento: Document) -> list[Commitment]:
+    return list(session.scalars(select(Commitment).where(Commitment.document_id == documento.id)))
+
+
+def test_confirmacao_guarda_o_horario_de_inicio(
+    session: Session, aluno: Student, store: InMemoryStore
+) -> None:
+    documento = _confirma_semana(session, aluno, store)
+
+    enfermaria = next(c for c in _do_documento(session, documento) if c.label == "Enfermaria")
+    assert enfermaria.starts_at == time(7, 0)
+
+
+def test_mesmo_bloco_em_dias_diferentes_vira_uma_serie(
+    session: Session, aluno: Student, store: InMemoryStore
+) -> None:
+    documento = _confirma_semana(session, aluno, store)
+    compromissos = _do_documento(session, documento)
+
+    musculacao = {c.series_id for c in compromissos if c.label == "Musculação"}
+    enfermaria = {c.series_id for c in compromissos if c.label == "Enfermaria"}
+    assert len(musculacao) == 1 and None not in musculacao
+    assert enfermaria.isdisjoint(musculacao)
+
+
+def test_compromisso_de_data_unica_tem_serie_propria(
+    session: Session, aluno: Student, store: InMemoryStore
+) -> None:
+    documento = _confirma_semana(session, aluno, store)
+    compromissos = _do_documento(session, documento)
+
+    dentista = next(c for c in compromissos if c.label == "Dentista")
+    outros = {c.series_id for c in compromissos if c is not dentista}
+    assert dentista.series_id is not None
+    assert dentista.series_id not in outros
+
+
+def test_documento_conta_os_blocos_editados_pelo_aluno(
+    session: Session, aluno: Student, store: InMemoryStore
+) -> None:
+    documento = _confirma_semana(session, aluno, store)
+    assert edited_blocks(session, documento) == 0
+
+    _do_documento(session, documento)[0].edited_by_student = True
+    session.flush()
+
+    assert edited_blocks(session, documento) == 1
+
+
+def test_reconfirmar_substitui_inclusive_os_editados(
+    session: Session, aluno: Student, store: InMemoryStore
+) -> None:
+    documento = _confirma_semana(session, aluno, store)
+    for compromisso in _do_documento(session, documento):
+        compromisso.edited_by_student = True
+    session.flush()
+
+    confirm(
+        session,
+        documento,
+        extraction=RoutineExtraction.model_validate(SEMANA_COM_HORARIO),
+        today=HOJE,
+    )
+    session.flush()
+
+    compromissos = _do_documento(session, documento)
+    assert len(compromissos) == 5
+    assert not any(c.edited_by_student for c in compromissos)
+
+
+def test_horario_invalido_e_recusado_e_leitura_e_aceita() -> None:
+    base = {"label": "x", "weekday": 0, "duration_minutes": 30}
+    with pytest.raises(ValueError):
+        ExtractedCommitment.model_validate({**base, "kind": "aula", "starts_at": "25:00"})
+
+    leitura = ExtractedCommitment.model_validate({**base, "kind": "leitura", "starts_at": "21:30"})
+    assert leitura.starts_at == time(21, 30)
+
+
+def test_dois_blocos_iguais_no_mesmo_dia_nao_viram_uma_serie(
+    session: Session, aluno: Student, store: InMemoryStore
+) -> None:
+    """Ambulatório de manhã e à tarde, sem horário: editar um não pode sumir com o outro."""
+    bloco = {"kind": "aula", "label": "Ambulatório", "duration_minutes": 240}
+    rotina = {
+        "commitments": [
+            {**bloco, "weekday": 0},
+            {**bloco, "weekday": 0},
+            {**bloco, "weekday": 2},
+            {**bloco, "weekday": 2},
+        ],
+        "exams": [],
+        "unreadable": [],
+    }
+    documento = sobe(session, aluno, store)
+    confirm(session, documento, extraction=RoutineExtraction.model_validate(rotina), today=HOJE)
+    session.flush()
+
+    series: dict[object, list[int | None]] = {}
+    for compromisso in _do_documento(session, documento):
+        series.setdefault(compromisso.series_id, []).append(compromisso.weekday)
+    assert sorted(sorted(dias) for dias in series.values()) == [[0, 2], [0, 2]]  # type: ignore[type-var]

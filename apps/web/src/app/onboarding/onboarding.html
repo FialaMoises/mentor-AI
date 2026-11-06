@@ -128,6 +128,12 @@
               }
             </select>
             <input
+              type="time"
+              class="inicio"
+              [value]="item.starts_at ?? ''"
+              (change)="mudarInicio($index, $any($event.target).value)"
+            />
+            <input
               type="number"
               min="15"
               max="1440"
@@ -142,6 +148,13 @@
           <li class="muted">Nenhum compromisso encontrado — seu dia fica todo livre.</li>
         }
       </ul>
+
+      @if (documento()?.edited_blocks) {
+        <p class="alert">
+          Você editou {{ documento()?.edited_blocks }} blocos deste arquivo na sua rotina.
+          Confirmar de novo substitui essas edições.
+        </p>
+      }
 
       <button type="button" [disabled]="ocupado()" (click)="confirmar()">
         Está certo, gerar meu plano

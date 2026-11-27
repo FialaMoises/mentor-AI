@@ -1,0 +1,112 @@
+.aviso-offline {
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0;
+}
+
+.tasks {
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.task {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+
+.task-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.kind {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.topic {
+  font-weight: 600;
+}
+
+.task.is-done .topic {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.task.is-skipped .topic {
+  color: var(--muted);
+}
+
+/* O estado da tarefa em texto, não só na cor ou num botão apagado. */
+.selo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--control);
+  color: var(--muted);
+}
+
+.selo.feita {
+  border-color: var(--ok-fg);
+  color: var(--ok-fg);
+}
+
+.vazio p {
+  margin: 0;
+}
+
+.task-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.acertos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.acertos label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.acertos input {
+  width: 4.5rem;
+}
+
+.erro-acertos {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--alert-fg);
+  font-size: 0.9rem;
+}
+
+.erro-acertos:empty {
+  display: none;
+}

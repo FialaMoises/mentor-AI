@@ -1,0 +1,155 @@
+<h1>Sua conta</h1>
+
+<div aria-live="polite">
+  @if (erro()) {
+    <p class="alert" role="alert">{{ erro() }}</p>
+  }
+</div>
+
+@if (carregando()) {
+  <p class="muted">Carregando sua assinatura…</p>
+}
+
+@if (assinatura(); as plano) {
+  <section class="cartao">
+    <p class="status">
+      <strong>{{ rotuloStatus() }}</strong>
+      @if (plano.status === 'trial' && plano.trial_ends_on) {
+        · teste até {{ dataCurta(plano.trial_ends_on) }}
+      }
+      @if (plano.status === 'ativa' && plano.current_period_end) {
+        · renova em {{ dataCurta(plano.current_period_end) }}
+      }
+      @if (plano.status === 'pausada' && plano.paused_until) {
+        · cobrança volta em {{ dataCurta(plano.paused_until) }}
+      }
+    </p>
+    <p class="muted">
+      Plano {{ plano.plan }}
+      @if (plano.price_cents > 0) {
+        · {{ preco() }}
+      }
+    </p>
+    @if (!plano.has_access && plano.status !== 'pausada') {
+      <p class="muted">A cobrança está parada. Seu plano e seus dados continuam disponíveis.</p>
+    }
+  </section>
+
+  @if (plano.status !== 'pausada' && plano.status !== 'ativa') {
+    <h2>Assinar</h2>
+    <div class="planos">
+      <button type="button" [disabled]="ocupado()" (click)="assinar('mensal')">
+        Mensal · {{ reais(plano.price_monthly_cents) }}
+      </button>
+      <button type="button" class="ghost" [disabled]="ocupado()" (click)="assinar('anual')">
+        Anual · {{ reais(plano.price_annual_cents) }}, com desconto
+      </button>
+    </div>
+  }
+
+  @if (plano.status !== 'cancelada') {
+    <h2>Precisa dar um tempo?</h2>
+    @if (plano.status === 'pausada') {
+      <p class="muted">
+        A cobrança está parada. O plano e os dados continuam disponíveis enquanto isso.
+      </p>
+      <button type="button" (click)="retomar()">Retomar a assinatura</button>
+    } @else {
+      <p class="muted">
+        Pausar para a cobrança até a data que você escolher. O plano e os dados continuam
+        disponíveis, e nada é apagado.
+      </p>
+      <label class="campo">
+        <span>Pausar até</span>
+        <input type="date" [min]="amanha" [(ngModel)]="pausarAte" name="pausarAte" />
+      </label>
+      <div class="acoes">
+        <button type="button" class="ghost" [disabled]="ocupado()" (click)="pausar()">
+          Pausar
+        </button>
+        <button type="button" class="ghost" (click)="confirmandoCancelamento.set(true)">
+          Cancelar assinatura
+        </button>
+      </div>
+    }
+
+    @if (confirmandoCancelamento()) {
+      <div class="confirmacao" role="alertdialog" aria-labelledby="titulo-cancelar">
+        <p id="titulo-cancelar">
+          Cancelar encerra a cobrança. O plano e os seus dados continuam disponíveis. Se for só um
+          tempo, pausar também resolve.
+        </p>
+        <div class="acoes">
+          <button type="button" (click)="cancelar()">Cancelar mesmo assim</button>
+          <button type="button" class="ghost" (click)="confirmandoCancelamento.set(false)">
+            Deixa pra lá
+          </button>
+        </div>
+      </div>
+    }
+  }
+}
+
+<h2>Seus dados</h2>
+<div class="acoes">
+  <button type="button" class="ghost" (click)="exportar()">Baixar meus dados</button>
+  <button type="button" class="ghost" [disabled]="ocupado()" (click)="sair()">Sair</button>
+  <button type="button" class="ghost perigo" (click)="pedirExclusao()">Apagar minha conta</button>
+</div>
+
+@if (perdidasAoSair() > 0) {
+  <div class="confirmacao" role="alertdialog" aria-labelledby="titulo-perdidas">
+    <p id="titulo-perdidas">
+      @if (perdidasAoSair() === 1) {
+        1 marcação feita sem internet não pôde ser salva: a tarefa saiu do plano ou os números não
+        fechavam.
+      } @else {
+        {{ perdidasAoSair() }} marcações feitas sem internet não puderam ser salvas: as tarefas
+        saíram do plano ou os números não fechavam.
+      }
+    </p>
+    <div class="acoes">
+      <button type="button" class="perigo-cheio" (click)="encerrar()">Sair mesmo assim</button>
+      <button type="button" class="ghost" (click)="perdidasAoSair.set(0)">Ficar</button>
+    </div>
+  </div>
+}
+
+@if (pendentesAoSair() > 0) {
+  <div class="confirmacao" role="alertdialog" aria-labelledby="titulo-sair">
+    <p id="titulo-sair">
+      @if (pendentesAoSair() === 1) {
+        1 marcação feita sem internet ainda não subiu.
+      } @else {
+        {{ pendentesAoSair() }} marcações feitas sem internet ainda não subiram.
+      }
+      Sair agora apaga essas marcações deste aparelho.
+    </p>
+    <div class="acoes">
+      <button type="button" class="perigo-cheio" (click)="encerrar()">Sair mesmo assim</button>
+      <button type="button" class="ghost" (click)="pendentesAoSair.set(0)">Ficar</button>
+    </div>
+  </div>
+}
+
+@if (confirmandoExclusao()) {
+  <div class="confirmacao" role="alertdialog" aria-labelledby="titulo-apagar">
+    <p id="titulo-apagar">
+      Apagar a conta remove seu plano, seu progresso e os arquivos que você enviou, neste e em todos
+      os aparelhos. Não dá para desfazer.
+    </p>
+    <div class="acoes">
+      <button type="button" class="perigo-cheio" [disabled]="ocupado()" (click)="apagarConta()">
+        Apagar para sempre
+      </button>
+      <button type="button" class="ghost" (click)="confirmandoExclusao.set(false)">
+        Não apagar
+      </button>
+    </div>
+  </div>
+} @else {
+  <p class="muted">
+    Apagar a conta remove seu plano, seu progresso e os arquivos que você enviou. Não dá para
+    desfazer.
+  </p>
+}

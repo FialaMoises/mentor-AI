@@ -1,0 +1,21 @@
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+<header class="topbar">
+  <div class="topo" [class.larga]="larga()">
+    <span class="brand" translate="no">mentor-AI</span>
+    @if (mostraMenu()) {
+      <nav aria-label="Principal">
+        <a routerLink="/hoje" routerLinkActive="atual" ariaCurrentWhenActive="page">Hoje</a>
+        <a routerLink="/rotina" routerLinkActive="atual" ariaCurrentWhenActive="page"
+          >Minha rotina</a
+        >
+        <a routerLink="/avisos" routerLinkActive="atual" ariaCurrentWhenActive="page">Avisos</a>
+        <a routerLink="/conta" routerLinkActive="atual" ariaCurrentWhenActive="page">Conta</a>
+      </nav>
+    }
+  </div>
+</header>
+
+<main id="conteudo" class="shell" [class.larga]="larga()" tabindex="-1">
+  <router-outlet />
+</main>

@@ -1,0 +1,57 @@
+h2 {
+  margin: 2rem 0 0.4rem;
+  font-size: 1.05rem;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0.25rem 0;
+}
+
+.cartao {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+
+.status {
+  margin: 0;
+}
+
+.campo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+}
+
+.planos,
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+}
+
+button.perigo {
+  color: var(--alert-fg);
+}
+
+.confirmacao {
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.7rem;
+  background: var(--alert-bg);
+  color: var(--alert-fg);
+}
+
+.confirmacao p {
+  margin: 0 0 0.5rem;
+}
+
+button.perigo-cheio {
+  background: var(--alert-fg);
+  color: var(--bg);
+  border-color: var(--alert-fg);
+}

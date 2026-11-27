@@ -1,0 +1,220 @@
+/*
+ * Base comum do app: tokens, botões, campos, avisos e estados de interação.
+ * Os componentes só cuidam do próprio layout; botão e campo têm um estilo só.
+ *
+ * Contraste (WCAG 2.1): texto ≥ 4,5:1 sobre o fundo; contorno de controle
+ * (`--control`) ≥ 3:1; o texto branco dos blocos da rotina ≥ 5,4:1 nas seis cores.
+ */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #101828;
+  --muted: #667085;
+  /* Divisória decorativa (cartões, linhas da grade): não é contorno de controle. */
+  --line: #e4e7ec;
+  /* Contorno de campo e botão secundário: 3,67:1 sobre o branco. */
+  --control: #7c8698;
+  --accent: #101828;
+  --accent-fg: #ffffff;
+  --accent-hover: #344054;
+  --hover-bg: #f2f4f7;
+  --alert-bg: #fef3f2;
+  --alert-fg: #b42318;
+  --focus: #2f5fb8;
+  --ok-fg: #23704a;
+  --warn-fg: #8f5a12;
+  --bad-fg: #b23c39;
+  --radius: 0.5rem;
+  --radius-card: 0.75rem;
+  --touch: 44px;
+}
+
+@mixin escuro {
+  --bg: #0f1115;
+  --fg: #e7e9ee;
+  --muted: #98a2b3;
+  --line: #272b33;
+  --control: #7c8496;
+  --accent: #e7e9ee;
+  --accent-fg: #0f1115;
+  --accent-hover: #c5cad3;
+  --hover-bg: #1b1f27;
+  --alert-bg: #2a1614;
+  --alert-fg: #fda29b;
+  --focus: #8ab4ff;
+  --ok-fg: #5ccf95;
+  --warn-fg: #f0b45c;
+  --bad-fg: #ff8f8a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include escuro;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+  accent-color: var(--focus);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+h2 {
+  text-wrap: balance;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* ---------- Botões ---------- */
+
+button {
+  font: inherit;
+  min-height: 40px;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--control);
+}
+
+button.ghost:hover:not(:disabled) {
+  background: var(--hover-bg);
+  border-color: var(--fg);
+}
+
+button:disabled {
+  cursor: default;
+  background: var(--hover-bg);
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+/* ---------- Campos ---------- */
+
+input,
+select,
+textarea {
+  font: inherit;
+  min-height: 40px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--control);
+  border-radius: var(--radius);
+  background-color: var(--bg);
+  color: var(--fg);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  min-height: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+input[type='range'] {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+
+input:hover:not(:disabled),
+select:hover:not(:disabled) {
+  border-color: var(--fg);
+}
+
+/* ---------- Foco: anel próprio, só no teclado ---------- */
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---------- Textos e avisos ---------- */
+
+.muted {
+  color: var(--muted);
+}
+
+.alert {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--alert-bg);
+  color: var(--alert-fg);
+}
+
+/* Some da vista, continua para o leitor de tela. */
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Toque: alvos de 44px no celular ---------- */
+
+@media (max-width: 767px), (pointer: coarse) {
+  button,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select {
+    min-height: var(--touch);
+  }
+
+  /* O trilho do slider continua fino; a área de toque é que ganha 44px. */
+  input[type='range'] {
+    min-height: var(--touch);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:active:not(:disabled) {
+    transform: none;
+  }
+}

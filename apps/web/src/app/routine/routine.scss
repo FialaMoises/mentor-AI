@@ -1,0 +1,274 @@
+:host {
+  /* Texto branco sobre cada cor: de 5,4:1 a 6,4:1 (AA para texto pequeno). */
+  --aula: #2f5fb8;
+  --plantao: #b23c39;
+  --academia: #23704a;
+  --leitura: #6b4cb0;
+  --trabalho: #8f5a12;
+  --outro: #5d6b82;
+  display: block;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0;
+}
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.periodo {
+  font-weight: 600;
+}
+
+.resumo,
+.alert {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.resumo {
+  border: 1px solid var(--line);
+}
+
+.alert {
+  background: var(--alert-bg);
+  color: var(--alert-fg);
+}
+
+.abas {
+  display: none;
+  gap: 0.25rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.aba {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 0.4rem 0;
+  border-color: var(--control);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.aba.atual,
+.aba.atual:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: 2.25rem repeat(7, minmax(0, 1fr));
+  gap: 0.2rem;
+  margin-top: 1rem;
+}
+
+.dia-nome {
+  height: 1.6rem;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.dia.hoje .dia-nome {
+  text-decoration: underline;
+}
+
+/* A faixa "sem horário" tem a mesma altura nas duas colunas: N chips de --chip-h. */
+.grade {
+  --chip-h: 1.6rem;
+  --chip-gap: 0.15rem;
+}
+
+.sem-horario {
+  --chips: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--chip-gap);
+  height: calc(var(--chips) * (var(--chip-h) + var(--chip-gap)));
+}
+
+.linha-do-tempo {
+  position: relative;
+  border-radius: 0.35rem;
+  background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+}
+
+.horas .linha-do-tempo {
+  background: none;
+}
+
+.horas .sem-horario.com-itens::before {
+  content: 'sem horário';
+  display: block;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  text-align: right;
+  padding-right: 0.25rem;
+  color: var(--muted);
+}
+
+.hora {
+  position: absolute;
+  right: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  transform: translateY(-0.3rem);
+}
+
+.bloco,
+.continua {
+  position: absolute;
+  left: 2px;
+  width: calc(100% - 4px);
+  min-height: 0;
+  overflow: hidden;
+  padding: 0.1rem 0.25rem;
+  border: 0;
+  border-radius: 0.3rem;
+  color: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.bloco.chip {
+  position: static;
+  display: block;
+  height: var(--chip-h);
+  min-height: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Sem opacidade: o contraste fica, e o estado vai no traço. */
+.bloco.travado,
+.continua.travado {
+  cursor: help;
+  outline: 2px dashed var(--bg);
+  outline-offset: -4px;
+}
+
+.continua {
+  border-top: 2px dashed rgba(255, 255, 255, 0.85);
+}
+
+@each $tipo in aula, plantao, academia, leitura, trabalho, outro {
+  .bloco.#{$tipo},
+  .continua.#{$tipo},
+  .bloco.#{$tipo}:hover,
+  .continua.#{$tipo}:hover {
+    background: var(--#{$tipo});
+  }
+}
+
+.bloco:hover:not(.travado),
+.continua:hover:not(.travado) {
+  filter: brightness(1.12);
+}
+
+.bloco:focus-visible,
+.continua:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+.rodape {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--ok-fg);
+}
+
+.rodape.zero {
+  color: var(--bad-fg);
+}
+
+.rodape.leve {
+  color: var(--warn-fg);
+}
+
+.nota {
+  margin: 0;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Celular: um dia por vez, escolhido nas abas. */
+@media (max-width: 767px) {
+  .abas {
+    display: flex;
+  }
+
+  .grade {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+  }
+
+  .dia:not(.selecionado) {
+    display: none;
+  }
+
+  .bloco,
+  .continua {
+    font-size: 0.8rem;
+  }
+
+  .grade {
+    --chip-h: var(--touch);
+  }
+}
+
+/* Lista do dia: o mesmo conteúdo da grade, com alvos de toque inteiros no celular. */
+.lista-dia {
+  display: none;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista-dia button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.barra a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  color: var(--fg);
+}
+
+@media (max-width: 767px) {
+  .bloco {
+    flex-direction: row;
+    flex-wrap: wrap;
+    column-gap: 0.4rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .lista-dia {
+    display: grid;
+  }
+}

@@ -11,6 +11,11 @@ from .demo import demo_routine
 from .office import OFFICE_TYPES, OfficeError, text_from_office
 from .prompt import SYSTEM, file_as_data, user_prompt
 
+#: Fallback do lado da Anthropic: se o modelo recusar o arquivo, a mesma chamada
+#: segue num modelo de reserva escolhido pelo servidor, em vez de o upload falhar.
+FALLBACK_BETA = "server-side-fallback-2026-07-01"
+MAX_TOKENS = 4096
+
 
 class ExtractionError(RuntimeError):
     """O provedor não devolveu JSON utilizável."""
@@ -95,9 +100,11 @@ class AnthropicExtractor(ExtractionProvider):
         )
 
     def extract(self, *, content: bytes, content_type: str, kind: str) -> dict[str, Any]:
-        resposta = self._client.messages.create(
+        resposta = self._client.beta.messages.create(
             model=self._model,
-            max_tokens=4096,
+            max_tokens=MAX_TOKENS,
+            betas=[FALLBACK_BETA],
+            fallbacks="default",
             system=SYSTEM,
             messages=[
                 {
@@ -109,6 +116,14 @@ class AnthropicExtractor(ExtractionProvider):
                 }
             ],
         )
+        if resposta.stop_reason == "refusal":
+            raise ExtractionError(
+                "o leitor de arquivos recusou este arquivo; confira se é mesmo a sua rotina"
+            )
+        if resposta.stop_reason == "max_tokens":
+            raise ExtractionError(
+                "a leitura saiu cortada: o arquivo tem rotina demais para uma vez"
+            )
         partes = [bloco.text for bloco in resposta.content if getattr(bloco, "type", "") == "text"]
         if not partes:
             raise ExtractionError("o modelo respondeu sem texto")

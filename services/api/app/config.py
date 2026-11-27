@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
     # Extração. Sem chave, a API usa o dublê e não chama ninguém de fora.
     anthropic_api_key: str = ""
-    extraction_model: str = "claude-sonnet-4-5"
+    extraction_model: str = "claude-opus-5-5"
 
     # Web Push. Sem chave VAPID, a API registra a intenção e não envia nada.
     vapid_public_key: str = ""

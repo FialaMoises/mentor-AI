@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 
 from sqlalchemy import delete as sql_delete
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..clock import now_utc
 from ..engine import Commitment as EngineCommitment
 from ..engine import capacities_from_commitments, daily_budget
 from ..extraction.provider import ExtractionError, ExtractionProvider
@@ -296,7 +297,7 @@ def confirm(
 
     document.extracted = extraction.model_dump(mode="json")
     document.status = "confirmado"
-    document.confirmed_at = datetime.now(UTC)
+    document.confirmed_at = now_utc()
     document.retention_until = today + timedelta(days=RETENTION_DAYS_AFTER_CONFIRM)
     session.flush()
 
@@ -325,7 +326,7 @@ def purge_original(session: Session, document: Document, store: ObjectStore) -> 
     if document.storage_key is not None:
         store.delete(document.storage_key)
         document.storage_key = None
-    document.purged_at = datetime.now(UTC)
+    document.purged_at = now_utc()
     session.flush()
 
 

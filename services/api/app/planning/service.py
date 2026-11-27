@@ -35,9 +35,6 @@ from ..models import (
 )
 from ..params import engine_params
 
-#: Usado enquanto o aluno não subiu rotina nenhuma (a fase 3 traz os uploads).
-DEFAULT_FREE_MINUTES = 120
-
 
 @dataclass(frozen=True, slots=True)
 class ReplanResult:
@@ -67,9 +64,9 @@ def primary_exam(session: Session, student: Student) -> TargetExam:
 
 
 def capacities_between(
-    session: Session, student: Student, start: date, end: date
+    session: Session, student: Student, start: date, end: date, params: EngineParams
 ) -> list[DayCapacity]:
-    """Capacidade dia a dia: a registrada quando existe, o padrão no resto."""
+    """Capacidade dia a dia: a registrada quando existe, `default_free_minutes` no resto."""
     registradas = {
         row.day: row
         for row in session.scalars(
@@ -87,7 +84,7 @@ def capacities_between(
         dias.append(
             DayCapacity(day=dia, free_minutes=registrada.free_minutes, light=registrada.light)
             if registrada is not None
-            else DayCapacity(day=dia, free_minutes=DEFAULT_FREE_MINUTES)
+            else DayCapacity(day=dia, free_minutes=params.default_free_minutes)
         )
         dia += timedelta(days=1)
     return dias
@@ -173,7 +170,7 @@ def project(
     alvo = primary_exam(session, student)
     inicio = today + timedelta(days=1) if from_tomorrow else today
 
-    capacidades = capacities_between(session, student, inicio, alvo.exam_date)
+    capacidades = capacities_between(session, student, inicio, alvo.exam_date, params)
     if is_inactive(session, student, today, params):
         capacidades = restart_capacities(capacidades, params)
 

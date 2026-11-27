@@ -7,12 +7,17 @@ dependência para fixar o dia.
 from __future__ import annotations
 
 import time
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
 
 def today_in(timezone: str) -> date:
     return datetime.now(ZoneInfo(timezone)).date()
+
+
+def now_utc() -> datetime:
+    """O instante atual, em UTC. Serve aos carimbos (confirmado em, cancelado em)."""
+    return datetime.now(UTC)
 
 
 def monotonic() -> float:

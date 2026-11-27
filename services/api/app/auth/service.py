@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..clock import now_utc
 from ..models import AuthSession, LoginToken, Student
 
 #: O link vale pouco tempo: é para usar agora, não guardar.
@@ -58,7 +59,7 @@ def normalize_email(email: str) -> str:
 
 def request_login(session: Session, email: str, *, now: datetime | None = None) -> MagicLink:
     """Cria o token. Não diz se o e-mail já existe — isso é do dono do e-mail."""
-    agora = now or datetime.now(UTC)
+    agora = now or now_utc()
     endereco = normalize_email(email)
     token = secrets.token_urlsafe(32)
     expira = agora + timedelta(minutes=LOGIN_TOKEN_MINUTES)
@@ -74,7 +75,7 @@ def _as_utc(momento: datetime) -> datetime:
 
 def verify_login(session: Session, token: str, *, now: datetime | None = None) -> LoggedIn:
     """Troca o token pela sessão. Token usado não volta a valer."""
-    agora = now or datetime.now(UTC)
+    agora = now or now_utc()
     registro = session.scalar(select(LoginToken).where(LoginToken.token_hash == _hash(token)))
     if registro is None:
         raise AuthError("link inválido")
@@ -107,7 +108,7 @@ def verify_login(session: Session, token: str, *, now: datetime | None = None) -
 def student_for_token(
     session: Session, token: str, *, now: datetime | None = None
 ) -> Student | None:
-    agora = now or datetime.now(UTC)
+    agora = now or now_utc()
     sessao = session.scalar(select(AuthSession).where(AuthSession.token_hash == _hash(token)))
     if sessao is None or sessao.revoked_at is not None:
         return None
@@ -119,13 +120,13 @@ def student_for_token(
 def logout(session: Session, token: str, *, now: datetime | None = None) -> None:
     sessao = session.scalar(select(AuthSession).where(AuthSession.token_hash == _hash(token)))
     if sessao is not None and sessao.revoked_at is None:
-        sessao.revoked_at = now or datetime.now(UTC)
+        sessao.revoked_at = now or now_utc()
         session.flush()
 
 
 def revoke_all(session: Session, student: Student, *, now: datetime | None = None) -> int:
     """Sai de todos os aparelhos. Usado também antes de apagar a conta."""
-    agora = now or datetime.now(UTC)
+    agora = now or now_utc()
     sessoes = list(
         session.scalars(
             select(AuthSession).where(

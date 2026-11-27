@@ -7,12 +7,13 @@ pagamento: a aplicação guarda só a referência que o provedor devolve.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any, Protocol
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..clock import now_utc
 from ..models import PaymentEvent, Student, Subscription
 
 TRIAL_DAYS = 14
@@ -186,7 +187,7 @@ def cancel(session: Session, student: Student, gateway: BillingGateway) -> Subsc
     if assinatura.provider_ref:
         gateway.cancel(assinatura.provider_ref)
     assinatura.status = "cancelada"
-    assinatura.canceled_at = datetime.now(UTC)
+    assinatura.canceled_at = now_utc()
     student.subscription_status = "cancelada"
     session.flush()
     return assinatura
@@ -226,7 +227,7 @@ def handle_event(session: Session, event: GatewayEvent, gateway: BillingGateway)
             assinatura.status = "atrasada"
         elif event.kind == "assinatura_cancelada":
             assinatura.status = "cancelada"
-            assinatura.canceled_at = datetime.now(UTC)
+            assinatura.canceled_at = now_utc()
         if aluno is not None:
             aluno.subscription_status = assinatura.status
 

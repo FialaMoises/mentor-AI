@@ -47,6 +47,9 @@ class EngineParams:
     #: Quanto do dia dá para usar para estudo, antes de descontar compromisso.
     #: Não é a meta do aluno: é o teto físico do dia, depois de dormir e viver.
     study_window_minutes: int = 600
+    #: Minutos livres de um dia sem capacidade calculada (aluno que ainda não
+    #: confirmou rotina nenhuma, ou dia sem linha gravada).
+    default_free_minutes: int = 120
     exam_horizon_days: int = 365
     theory_minutes: int = 50
     questions_minutes: int = 30
@@ -69,6 +72,8 @@ class EngineParams:
             raise ValueError("restart_floor vai de 0 (exclusivo) a 1")
         if not 0 < self.study_window_minutes <= 24 * 60:
             raise ValueError("study_window_minutes vai de 1 minuto a um dia")
+        if not 0 <= self.default_free_minutes <= 24 * 60:
+            raise ValueError("default_free_minutes vai de 0 a um dia")
 
     def minutes_for(self, kind: TaskKind) -> int:
         return {

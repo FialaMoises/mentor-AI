@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     engine_inactivity_days: int = 5
     #: Teto físico do dia para estudo, antes de descontar compromisso.
     engine_study_window_minutes: int = 600
+    #: Minutos livres de um dia sem capacidade calculada.
+    engine_default_free_minutes: int = 120
     default_timezone: str = "America/Fortaleza"
 
     # Object store. Sem S3 configurado, os arquivos vão para o disco em

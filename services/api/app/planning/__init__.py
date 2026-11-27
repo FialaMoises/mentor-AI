@@ -1,5 +1,4 @@
 from .service import (
-    DEFAULT_FREE_MINUTES,
     PlanningError,
     ReplanResult,
     capacities_between,
@@ -12,7 +11,6 @@ from .service import (
 )
 
 __all__ = [
-    "DEFAULT_FREE_MINUTES",
     "PlanningError",
     "ReplanResult",
     "capacities_between",

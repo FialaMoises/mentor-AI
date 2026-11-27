@@ -7,11 +7,12 @@ do iPhone sem app instalado.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..clock import now_utc
 from ..models import NotificationLog, PushSubscription, Student, Task
 from .base import (
     EmailSender,
@@ -91,7 +92,7 @@ def deliver(
             senders.push.send(alvo, message)
             return SendOutcome(sent=True, channel="push")
         except SubscriptionExpired as erro:
-            assinatura.expired_at = datetime.now(UTC)
+            assinatura.expired_at = now_utc()
             erro_push = str(erro)
         except SendFailed as erro:
             erro_push = str(erro)

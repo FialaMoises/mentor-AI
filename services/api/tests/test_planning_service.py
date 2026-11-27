@@ -6,10 +6,12 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.engine import EngineParams
 from app.jobs.nightly import run as run_nightly
 from app.models import DailyCapacity, PlanVersion, ProgressEvent, Student, TargetExam, Task
-from app.planning import DEFAULT_FREE_MINUTES, PlanningError, capacities_between, replan
+from app.params import engine_params
+from app.planning import PlanningError, capacities_between, replan
 from app.seed import SEED_STUDENT_ID
 from app.seed import run as seed
 
@@ -116,12 +118,41 @@ def test_capacidade_registrada_vence_o_padrao(session: Session, aluno: Student) 
     session.add(DailyCapacity(student_id=aluno.id, day=amanha, free_minutes=15, light=True))
     session.flush()
 
-    dias = capacities_between(session, aluno, HOJE, HOJE + timedelta(days=2))
+    dias = capacities_between(session, aluno, HOJE, HOJE + timedelta(days=2), PARAMS)
 
     por_dia = {d.day: d for d in dias}
     assert por_dia[amanha].free_minutes == 15
     assert por_dia[amanha].light is True
-    assert por_dia[HOJE + timedelta(days=2)].free_minutes == DEFAULT_FREE_MINUTES
+    assert por_dia[HOJE + timedelta(days=2)].free_minutes == PARAMS.default_free_minutes
+
+
+def test_dia_sem_capacidade_registrada_usa_o_padrao_dos_parametros(
+    session: Session, aluno: Student
+) -> None:
+    depois = HOJE + timedelta(days=200)  # além da prova: nenhuma capacidade gravada
+    params = EngineParams(default_free_minutes=45)
+
+    dias = capacities_between(session, aluno, depois, depois, params)
+
+    assert dias[0].free_minutes == 45
+
+
+def test_padrao_de_minutos_livres_vem_da_configuracao(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    get_settings.cache_clear()
+    monkeypatch.setenv("ENGINE_DEFAULT_FREE_MINUTES", "90")
+    try:
+        assert engine_params().default_free_minutes == 90
+    finally:
+        get_settings.cache_clear()
+
+
+def test_padrao_de_minutos_livres_invalido_e_recusado() -> None:
+    with pytest.raises(ValueError):
+        EngineParams(default_free_minutes=-1)
+    with pytest.raises(ValueError):
+        EngineParams(default_free_minutes=25 * 60)
 
 
 def test_aluno_sumido_volta_com_carga_reduzida(session: Session, aluno: Student) -> None:
@@ -140,7 +171,7 @@ def test_aluno_sumido_volta_com_carga_reduzida(session: Session, aluno: Student)
 
     amanha = HOJE + timedelta(days=1)
     minutos = sum(t.minutes for t in tarefas_de(session, aluno, amanha))
-    assert minutos <= DEFAULT_FREE_MINUTES * PARAMS.restart_floor
+    assert minutos <= PARAMS.default_free_minutes * PARAMS.restart_floor
 
 
 def test_job_noturno_replaneja_quem_tem_prova_principal(session: Session, aluno: Student) -> None:

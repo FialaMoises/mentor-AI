@@ -18,4 +18,5 @@ def engine_params() -> EngineParams:
         review_offsets_days=settings.review_offsets,
         inactivity_days=settings.engine_inactivity_days,
         study_window_minutes=settings.engine_study_window_minutes,
+        default_free_minutes=settings.engine_default_free_minutes,
     )

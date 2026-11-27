@@ -17,6 +17,7 @@ from ..config import get_settings
 from ..db import get_session
 from ..deps import current_student, get_object_store, get_senders
 from ..documents import erase as erase_document
+from ..documents import has_consent
 from ..models import Commitment, Document, Proficiency, Student, TargetExam, Task
 from ..notifications import Message, Senders
 from ..ratelimit import get_rate_limiter, retry_after
@@ -49,6 +50,10 @@ class MeOut(BaseModel):
     needs_onboarding: bool
     subscription_status: str
     trial_ends_on: date | None
+    #: Ainda falta aceitar o aviso de privacidade (o onboarding retoma por aqui).
+    consent_required: bool
+    #: O dia de hoje no fuso do aluno: o front compara datas com ele, não com o relógio local.
+    today: date
 
 
 def _needs_onboarding(session: Session, student: Student) -> bool:
@@ -141,6 +146,8 @@ def get_me(
         needs_onboarding=_needs_onboarding(session, student),
         subscription_status=assinatura.status if assinatura else "trial",
         trial_ends_on=assinatura.trial_ends_on if assinatura else None,
+        consent_required=not has_consent(session, student),
+        today=today_in(student.timezone),
     )
 
 

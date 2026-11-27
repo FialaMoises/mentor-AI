@@ -1,5 +1,8 @@
+import { registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
 import {
   ApplicationConfig,
+  LOCALE_ID,
   isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
@@ -11,9 +14,13 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth-interceptor';
 
+// Números e datas dos pipes em pt-BR ("1,5", não "1.5").
+registerLocaleData(localePt);
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    { provide: LOCALE_ID, useValue: 'pt-BR' },
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),

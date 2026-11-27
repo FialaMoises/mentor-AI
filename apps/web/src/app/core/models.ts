@@ -14,6 +14,8 @@ export interface DayPlan {
   capacity_minutes: number;
   light: boolean;
   plan_version: number;
+  /** Primeiro dia com tarefa no plano; depois de hoje = o plano ainda não começou. */
+  plan_starts_on?: string | null;
   tasks: PlanTask[];
 }
 

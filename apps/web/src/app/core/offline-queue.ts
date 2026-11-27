@@ -21,7 +21,9 @@ const CHAVE = 'mentor-ai.fila-offline';
 export class OfflineQueue {
   readonly pendentes = signal<number>(this.ler().length);
 
-  enfileirar(marcacao: Omit<MarcacaoPendente, 'client_event_id' | 'occurred_at'>): MarcacaoPendente {
+  enfileirar(
+    marcacao: Omit<MarcacaoPendente, 'client_event_id' | 'occurred_at'>,
+  ): MarcacaoPendente {
     const completa: MarcacaoPendente = {
       ...marcacao,
       client_event_id: this.novoId(),
@@ -46,10 +48,16 @@ export class OfflineQueue {
   }
 
   private novoId(): string {
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    if (typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID();
     }
-    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    // `randomUUID` só existe em contexto seguro (https ou localhost); fora dele,
+    // monta o UUID v4 à mão. A API exige `format: uuid` no client_event_id.
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
   }
 
   private ler(): MarcacaoPendente[] {

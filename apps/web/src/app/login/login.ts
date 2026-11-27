@@ -1,8 +1,10 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthApi } from '../core/auth-api';
+import { mensagemDoErro } from '../core/erro';
 import { Session } from '../core/session';
 
 type Estado = 'pedindo' | 'enviado' | 'entrando' | 'erro';
@@ -36,9 +38,14 @@ export class Login {
       return;
     }
     this.erro.set(null);
-    this.api.pedirLink(this.email).subscribe({
+    this.api.pedirLink(this.email.trim()).subscribe({
       next: () => this.estado.set('enviado'),
-      error: () => this.erro.set('Não consegui enviar o link agora. Tente de novo.'),
+      error: (falha: HttpErrorResponse) =>
+        this.erro.set(
+          falha.status === 422
+            ? 'Confira o e-mail.'
+            : mensagemDoErro(falha, 'Não consegui enviar o link agora. Tente de novo.'),
+        ),
     });
   }
 
@@ -46,12 +53,16 @@ export class Login {
     this.estado.set('entrando');
     this.api.entrar(token).subscribe({
       next: (sessao) => {
-        this.session.abrir(sessao.token, sessao.student_id);
+        this.session.abrir(sessao.token);
         void this.router.navigate([sessao.needs_onboarding ? '/comecar' : '/hoje']);
       },
-      error: () => {
+      error: (falha: HttpErrorResponse) => {
         this.estado.set('erro');
-        this.erro.set('Esse link não vale mais. Peça outro — eles duram 20 minutos.');
+        this.erro.set(
+          falha.status === 401
+            ? 'Esse link não vale mais. Peça outro — eles duram 20 minutos.'
+            : mensagemDoErro(falha, 'Não consegui entrar agora. Tente o link de novo.'),
+        );
       },
     });
   }

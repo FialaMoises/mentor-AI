@@ -24,6 +24,7 @@ from app.billing import (
     start_trial,
     subscription_of,
 )
+from app.config import get_settings
 from app.models import PaymentEvent, Student, Subscription
 
 HOJE = date(2026, 9, 25)
@@ -254,3 +255,20 @@ def test_webhook_pela_api_confere_a_assinatura(client: TestClient, session: Sess
 def test_aluno_sem_assinatura_nao_tem_acesso(session: Session, aluno: Student) -> None:
     assert has_access(session, aluno, HOJE) is False
     assert not list(session.scalars(select(Subscription)))
+
+
+def test_assinatura_traz_os_precos_dos_planos_antes_do_checkout(
+    client: TestClient,
+    session: Session,
+    login,  # type: ignore[no-untyped-def]
+) -> None:
+    aluno = Student(phase="formado", mode="independente", email="precos@exemplo.com")
+    session.add(aluno)
+    session.flush()
+    start_trial(session, aluno, date.today())
+    session.commit()
+
+    corpo = client.get("/api/v1/me/subscription", headers=login(aluno)).json()
+
+    assert corpo["price_monthly_cents"] == get_settings().price_monthly_cents
+    assert corpo["price_annual_cents"] == get_settings().price_annual_cents

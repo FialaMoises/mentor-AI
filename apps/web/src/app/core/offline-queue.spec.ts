@@ -49,4 +49,17 @@ describe('OfflineQueue', () => {
     expect(marcacao.client_event_id).toBeTruthy();
     expect(outra.todas()).toEqual([]);
   });
+
+  it('sem crypto.randomUUID (http fora de localhost), o id ainda é um UUID v4', () => {
+    const original = crypto.randomUUID;
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true });
+    try {
+      const marcacao = fila.enfileirar({ task_id: 't1', action: 'feita' });
+      expect(marcacao.client_event_id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+    } finally {
+      Object.defineProperty(crypto, 'randomUUID', { value: original, configurable: true });
+    }
+  });
 });

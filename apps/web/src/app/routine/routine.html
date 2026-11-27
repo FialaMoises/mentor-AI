@@ -14,18 +14,21 @@
   </div>
 </header>
 
-@if (resumo(); as texto) {
-  <p class="resumo">{{ texto }}</p>
-}
-@if (erro(); as texto) {
-  <p class="alert">{{ texto }}</p>
-}
+<div aria-live="polite">
+  @if (resumo(); as texto) {
+    <p class="resumo" role="status">{{ texto }}</p>
+  }
+  @if (erro(); as texto) {
+    <p class="alert" role="alert">{{ texto }}</p>
+  }
+</div>
 
-@for (e of edicoes(); track e) {
+@for (e of edicoes(); track e.id) {
   <app-commitment-form
     [inicial]="e.inicial"
     [salvando]="salvando()"
     [online]="!offline()"
+    [minData]="amanha()"
     (salvar)="salvar($event)"
     (apagar)="apagar()"
     (cancelar)="fechar()"
@@ -39,6 +42,7 @@
         type="button"
         class="aba"
         [class.atual]="i === diaSelecionado()"
+        [attr.aria-pressed]="i === diaSelecionado()"
         (click)="diaSelecionado.set(i)"
       >
         {{ diasCurtos[i] }}
@@ -49,7 +53,11 @@
   <div class="grade">
     <div class="horas" aria-hidden="true">
       <div class="dia-nome"></div>
-      <div class="sem-horario" [style.min-height.rem]="faixaSemHorario()"></div>
+      <div
+        class="sem-horario"
+        [class.com-itens]="faixaSemHorario() > 0"
+        [style.--chips]="faixaSemHorario()"
+      ></div>
       <div class="linha-do-tempo" [style.height.px]="alturaDia">
         @for (h of horas; track h) {
           <span class="hora" [style.top.px]="h * horaPx">{{ h }}h</span>
@@ -63,11 +71,19 @@
         [class.selecionado]="i === diaSelecionado()"
         [class.hoje]="dia.day === s.today"
       >
-        <h3 class="dia-nome">{{ diasCurtos[i] }} {{ diaMes(dia.day) }}</h3>
+        <h2 class="dia-nome">{{ diasCurtos[i] }} {{ diaMes(dia.day) }}</h2>
 
-        <div class="sem-horario" [style.min-height.rem]="faixaSemHorario()">
+        <div class="sem-horario" [style.--chips]="faixaSemHorario()">
           @for (item of semHorario(dia); track item.series_id) {
-            <button type="button" class="bloco chip {{ item.kind }}" (click)="abrir(item)">
+            <button
+              type="button"
+              class="bloco chip {{ item.kind }}"
+              [class.travado]="!item.editable"
+              [attr.title]="
+                (item.label || item.kind) + ' · ' + item.duration_minutes + ' min, sem horário'
+              "
+              (click)="abrir(item)"
+            >
               {{ item.label || item.kind }} · {{ item.duration_minutes }}min
             </button>
           }
@@ -80,13 +96,21 @@
         >
           @for (b of blocos(i); track $index) {
             @if (b.continua) {
-              <div
+              <button
+                type="button"
                 class="continua {{ b.item.kind }}"
+                [class.travado]="!b.item.editable"
                 [style.top.px]="b.topo"
                 [style.height.px]="b.altura"
+                [style.left]="esquerda(b)"
+                [style.width]="largura(b)"
+                [attr.aria-label]="
+                  (b.item.label || b.item.kind) + ', continua do dia anterior até ' + fim(b.item)
+                "
+                (click)="abrir(b.item)"
               >
                 {{ b.item.label || b.item.kind }} · até {{ fim(b.item) }}
-              </div>
+              </button>
             } @else {
               <button
                 type="button"
@@ -94,6 +118,8 @@
                 [class.travado]="!b.item.editable"
                 [style.top.px]="b.topo"
                 [style.height.px]="b.altura"
+                [style.left]="esquerda(b)"
+                [style.width]="largura(b)"
                 (click)="abrir(b.item)"
               >
                 <strong>{{ b.item.label || b.item.kind }}</strong>
@@ -113,6 +139,23 @@
         @if (dia.day === s.today && s.changed_today) {
           <p class="nota">mudanças valem a partir de amanhã</p>
         }
+
+        <ul class="lista-dia" [attr.aria-label]="'Compromissos de ' + diasCurtos[i]">
+          @for (item of dia.items; track item.series_id + '-' + $index) {
+            <li>
+              <button type="button" class="ghost" (click)="abrir(item)">
+                <span>{{ item.label || item.kind }}</span>
+                <span class="muted">
+                  @if (item.starts_at) {
+                    {{ item.starts_at }}–{{ fim(item) }}
+                  } @else {
+                    sem horário · {{ item.duration_minutes }} min
+                  }
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
       </section>
     }
   </div>

@@ -176,8 +176,8 @@ def test_sincronizacao_pela_api_devolve_a_contagem(
         "/api/v1/me/progress/sync", json={"entries": [entrada]}, headers=cabecalho
     ).json()
 
-    assert primeira == {"applied": 1, "duplicates": 0, "unknown": 0}
-    assert segunda == {"applied": 0, "duplicates": 1, "unknown": 0}
+    assert primeira == {"applied": 1, "duplicates": 0, "unknown": 0, "rejected": 0, "stale": 0}
+    assert segunda == {"applied": 0, "duplicates": 1, "unknown": 0, "rejected": 0, "stale": 0}
 
 
 def test_fila_mistura_marcacao_com_e_sem_hora_sem_quebrar(session: Session, aluno: Student) -> None:
@@ -201,3 +201,181 @@ def test_fila_mistura_marcacao_com_e_sem_hora_sem_quebrar(session: Session, alun
     resultado = sync(session, aluno, entradas)
 
     assert resultado.applied == 3
+
+
+def test_entrada_invalida_na_fila_e_recusada_sem_derrubar_as_outras(
+    session: Session, aluno: Student
+) -> None:
+    lista = tarefas(session, aluno)
+    entradas = [
+        ProgressEntry(task_id=lista[0].id, action="nao_deu", client_event_id=uuid.uuid4()),
+        ProgressEntry(
+            task_id=lista[1].id,
+            action="feita",
+            answered=5,
+            correct=9,
+            client_event_id=uuid.uuid4(),
+        ),
+    ]
+
+    resultado = sync(session, aluno, entradas)
+
+    assert (resultado.applied, resultado.rejected) == (1, 1)
+    assert lista[0].status == "nao_deu"
+    assert lista[1].status == "pendente"
+
+
+def test_sincronizacao_pela_api_com_entrada_invalida_responde_200(
+    client: TestClient,
+    session: Session,
+    aluno: Student,
+    login,  # type: ignore[no-untyped-def]
+) -> None:
+    session.commit()
+    cabecalho = login(aluno)
+    lista = tarefas(session, aluno)
+    entradas = [
+        {"task_id": str(lista[0].id), "action": "nao_deu", "client_event_id": str(uuid.uuid4())},
+        {
+            "task_id": str(lista[1].id),
+            "action": "feita",
+            "answered": 5,
+            "correct": 9,
+            "client_event_id": str(uuid.uuid4()),
+        },
+    ]
+
+    resposta = client.post(
+        "/api/v1/me/progress/sync", json={"entries": entradas}, headers=cabecalho
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json() == {
+        "applied": 1,
+        "duplicates": 0,
+        "unknown": 0,
+        "rejected": 1,
+        "stale": 0,
+    }
+
+
+def test_remarcar_a_tarefa_nao_soma_os_acertos_de_novo(session: Session, aluno: Student) -> None:
+    tarefa = next(t for t in tarefas(session, aluno) if t.kind == "questoes")
+
+    def proficiencia() -> tuple[int, int]:
+        linha = session.scalar(
+            select(Proficiency).where(
+                Proficiency.student_id == aluno.id, Proficiency.topic_id == tarefa.topic_id
+            )
+        )
+        assert linha is not None
+        return (linha.answered, linha.correct)
+
+    antes = proficiencia()
+    apply_progress(session, tarefa, action="feita", answered=20, correct=15)
+    apply_progress(session, tarefa, action="nao_deu")
+    assert proficiencia() == antes
+    apply_progress(session, tarefa, action="feita", answered=20, correct=15)
+    apply_progress(session, tarefa, action="feita", answered=10, correct=8)
+
+    assert proficiencia() == (antes[0] + 10, antes[1] + 8)
+
+
+def test_marcacao_offline_antiga_nao_passa_por_cima_de_uma_mais_nova(
+    session: Session, aluno: Student
+) -> None:
+    tarefa = next(t for t in tarefas(session, aluno) if t.kind == "questoes")
+
+    def proficiencia() -> tuple[int, int]:
+        linha = session.scalar(
+            select(Proficiency).where(
+                Proficiency.student_id == aluno.id, Proficiency.topic_id == tarefa.topic_id
+            )
+        )
+        assert linha is not None
+        return (linha.answered, linha.correct)
+
+    antes = proficiencia()
+    agora = datetime(2026, 11, 27, 15, tzinfo=UTC)
+    apply_progress(session, tarefa, action="nao_deu", occurred_at=agora)
+
+    resultado = sync(
+        session,
+        aluno,
+        [
+            ProgressEntry(
+                task_id=tarefa.id,
+                action="feita",
+                answered=30,
+                correct=20,
+                client_event_id=uuid.uuid4(),
+                occurred_at=agora - timedelta(hours=6),
+            )
+        ],
+    )
+    session.flush()
+
+    assert (resultado.applied, resultado.stale) == (0, 1)
+    assert tarefa.status == "nao_deu"
+    assert proficiencia() == antes
+    eventos = list(session.scalars(select(ProgressEvent).where(ProgressEvent.task_id == tarefa.id)))
+    assert len(eventos) == 2  # entra como histórico
+
+
+def test_data_no_futuro_vale_como_agora_e_nao_trava_a_tarefa(
+    session: Session, aluno: Student
+) -> None:
+    tarefa = tarefas(session, aluno)[0]
+
+    sync(
+        session,
+        aluno,
+        [
+            ProgressEntry(
+                task_id=tarefa.id,
+                action="feita",
+                client_event_id=uuid.uuid4(),
+                occurred_at=datetime(2099, 1, 1, tzinfo=UTC),
+            )
+        ],
+    )
+    session.flush()
+    apply_progress(session, tarefa, action="nao_deu")
+    session.flush()
+    depois = sync(
+        session,
+        aluno,
+        [
+            ProgressEntry(
+                task_id=tarefa.id,
+                action="feita",
+                client_event_id=uuid.uuid4(),
+                occurred_at=datetime.now(UTC) + timedelta(minutes=5),
+            )
+        ],
+    )
+
+    assert depois.applied == 1
+    assert tarefa.status == "feita"
+
+
+def test_marcacao_que_so_vira_historico_conta_como_stale(session: Session, aluno: Student) -> None:
+    tarefa = tarefas(session, aluno)[0]
+    apply_progress(session, tarefa, action="nao_deu")
+    session.flush()
+
+    resultado = sync(
+        session,
+        aluno,
+        [
+            ProgressEntry(
+                task_id=tarefa.id,
+                action="feita",
+                client_event_id=uuid.uuid4(),
+                occurred_at=datetime(2020, 1, 1, tzinfo=UTC),
+            )
+        ],
+    )
+
+    assert (resultado.applied, resultado.stale) == (0, 1)
+    assert tarefa.status == "nao_deu"

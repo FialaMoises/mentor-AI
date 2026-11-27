@@ -32,3 +32,6 @@ Thumbs.db
 
 # esboços e ledger dos agentes de brainstorming/plano
 .superpowers/
+
+# Saída do playwright-cli (snapshots e logs de console dos testes no navegador)
+.playwright-cli/

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-const API = '/api/v1';
+import { API } from './api-base';
 
 export interface AreaCatalogo {
   slug: string;

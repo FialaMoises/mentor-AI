@@ -1,14 +1,16 @@
 <h1>Piloto</h1>
 
-@if (erro()) {
-  <p class="alert">{{ erro() }}</p>
-}
+<div aria-live="polite">
+  @if (erro()) {
+    <p class="alert" role="alert">{{ erro() }}</p>
+  }
+</div>
 
-<label class="campo">
-  <span>Token do painel</span>
-  <input type="password" [(ngModel)]="token" name="token" />
-  <button type="button" (click)="carregar()">Ver números</button>
-</label>
+<form class="campo" (ngSubmit)="carregar()">
+  <label for="token-admin">Token do painel</label>
+  <input id="token-admin" type="password" autocomplete="off" [(ngModel)]="token" name="token" />
+  <button type="submit">Ver números</button>
+</form>
 
 @if (metricas(); as m) {
   <section class="numeros">

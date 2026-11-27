@@ -10,12 +10,13 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..clock import today_in
 from ..db import get_session
 from ..deps import current_student
+from ..documents import capacity_on
 from ..models import (
     TOPIC_LEVEL_AREA,
     TOPIC_LEVEL_SUBTEMA,
@@ -112,11 +113,19 @@ def read_today(
         )
     )
 
+    if capacity is not None:
+        livres, leve = capacity.free_minutes, capacity.light
+    else:
+        # Sem linha gravada, o motor calcula o dia na hora; nada é gravado (regra 3).
+        livres, leve = capacity_on(session, student, day)
+    inicio = session.scalar(select(func.min(Task.day)).where(Task.student_id == student.id))
+
     return DayPlanOut(
         date=day,
-        capacity_minutes=capacity.free_minutes if capacity else 0,
-        light=capacity.light if capacity else False,
+        capacity_minutes=livres,
+        light=leve,
         plan_version=max((t.plan_version.number for t in tasks), default=0),
+        plan_starts_on=inicio,
         tasks=[
             PlanTaskOut(
                 id=task.id,

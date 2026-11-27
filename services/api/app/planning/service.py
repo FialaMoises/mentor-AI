@@ -140,13 +140,28 @@ def is_inactive(session: Session, student: Student, today: date, params: EngineP
     return (today - ultimo.date()).days >= params.inactivity_days
 
 
-def summarize(plan: HorizonPlan, created: int, removed: int, exam_date: date) -> str:
+def summarize(
+    plan: HorizonPlan,
+    created: int,
+    removed: int,
+    exam_date: date,
+    *,
+    from_tomorrow: bool = True,
+    first: bool = False,
+) -> str:
+    """O que o aluno precisa saber do replanejamento, sem a contabilidade das linhas.
+
+    Replanejar apaga e recria as pendentes; contar o que só trocou de lugar
+    ("745 saíram do lugar antigo") assusta e não informa nada.
+    """
     if created == 0 and removed == 0:
         return "Nada mudou no plano."
 
-    partes = [f"{created} tarefas replanejadas até {exam_date:%d/%m}"]
-    if removed:
-        partes.append(f"{removed} saíram do lugar antigo")
+    inicio = "amanhã" if from_tomorrow else "hoje"
+    verbo = "montado" if first else "refeito"
+    partes = [f"Plano {verbo} de {inicio} até {exam_date:%d/%m}"]
+    if created == 0:
+        partes.append("não sobrou tempo de estudo nos dias até a prova")
     if not plan.projection.fits:
         projecao = plan.projection
         partes.append(
@@ -229,7 +244,14 @@ def replan(
         student_id=student.id,
         number=numero,
         reason=reason,
-        summary=summarize(plano, len(plano.tasks), removidas, alvo.exam_date),
+        summary=summarize(
+            plano,
+            len(plano.tasks),
+            removidas,
+            alvo.exam_date,
+            from_tomorrow=from_tomorrow,
+            first=numero == 1,
+        ),
     )
     session.add(versao)
     session.flush()

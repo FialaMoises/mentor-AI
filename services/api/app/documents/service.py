@@ -20,7 +20,15 @@ from ..engine import Commitment as EngineCommitment
 from ..engine import capacities_from_commitments, daily_budget
 from ..extraction.provider import ExtractionError, ExtractionProvider
 from ..extraction.schema import ExtractedCommitment, RoutineExtraction
-from ..models import Commitment, Consent, DailyCapacity, Document, Student, TargetExam
+from ..models import (
+    Commitment,
+    Consent,
+    DailyCapacity,
+    Document,
+    PlanVersion,
+    Student,
+    TargetExam,
+)
 from ..params import engine_params
 from ..planning import replan
 from ..storage import (
@@ -190,6 +198,36 @@ def _series_key(item: ExtractedCommitment) -> tuple[object, ...] | None:
     )
 
 
+def _from_confirmation_day(item: ExtractedCommitment, today: date) -> ExtractedCommitment | None:
+    """O compromisso lido no arquivo vale a partir do dia da confirmação, não antes.
+
+    Sem isso a rotina de hoje apareceria nas semanas passadas. O que já acabou
+    (vigência encerrada, data única no passado) não entra; o JSON extraído guarda
+    tudo do mesmo jeito.
+    """
+    if item.on_day is not None:
+        return item if item.on_day >= today else None
+    if item.ends_on is not None and item.ends_on < today:
+        return None
+    inicio = max(item.starts_on or today, today)
+    return item if inicio == item.starts_on else item.model_copy(update={"starts_on": inicio})
+
+
+def capacity_on(session: Session, student: Student, day: date) -> tuple[int, bool]:
+    """A capacidade do dia como o motor a calcula, sem gravar nada.
+
+    Serve ao dia que ainda não tem `DailyCapacity` (por exemplo, depois de seguir
+    sem arquivo): mostrar 0 seria mentir, e gravar mexeria no dia congelado.
+    """
+    compromissos = list(
+        session.scalars(select(Commitment).where(Commitment.student_id == student.id))
+    )
+    calculada = capacities_from_commitments(
+        [day], engine_commitments(compromissos), daily_budget(student.weekly_hours), engine_params()
+    )[0]
+    return calculada.free_minutes, calculada.light
+
+
 def rebuild_capacities(session: Session, student: Student, start: date, end: date) -> int:
     """Recalcula a capacidade dia a dia a partir dos compromissos confirmados."""
     if end < start:
@@ -239,9 +277,14 @@ def confirm(
     A extração que vale é a que vem desta chamada — o aluno pode ter corrigido o
     que o modelo errou.
     """
+    # Trava a linha do documento: um segundo confirm (clique duplo, duas abas) espera
+    # este terminar e então substitui a rotina, em vez de somar uma cópia.
+    session.execute(select(Document).where(Document.id == document.id).with_for_update())
     student = session.get(Student, document.student_id)
     if student is None:  # pragma: no cover - FK garante
         raise DocumentError("documento sem aluno")
+    # O dia de hoje como o aluno já o viu (sem este arquivo): é ele que fica congelado.
+    hoje_antes = capacity_on(session, student, today)
 
     # A rotina deste documento é substituída por inteiro: sem sobra da versão velha.
     session.execute(sql_delete(Commitment).where(Commitment.document_id == document.id))
@@ -251,7 +294,10 @@ def confirm(
     #: O mesmo bloco duas vezes no mesmo dia (manhã e tarde, sem horário) vira duas
     #: séries: a n-ésima ocorrência de cada dia vai para a n-ésima série.
     ocorrencias: dict[tuple[object, ...], int] = {}
-    for extraido in extraction.commitments:
+    for lido in extraction.commitments:
+        extraido = _from_confirmation_day(lido, today)
+        if extraido is None:
+            continue
         chave = _series_key(extraido)
         if chave is None:
             serie = uuid.uuid4()
@@ -277,6 +323,9 @@ def confirm(
         )
 
     for prova in extraction.exams:
+        if prova.exam_date < today:
+            # Prova que já passou não é alvo de nada: fica só no JSON extraído.
+            continue
         ja_existe = session.scalar(
             select(TargetExam.id).where(
                 TargetExam.student_id == student.id,
@@ -306,7 +355,36 @@ def confirm(
             TargetExam.student_id == student.id, TargetExam.is_primary.is_(True)
         )
     )
-    dias = rebuild_capacities(session, student, today, alvo.exam_date) if alvo else 0
+    # Hoje é congelado (regra 3): a capacidade de hoje só nasce aqui na primeira
+    # confirmação. Reconfirmar recalcula de amanhã e avisa a rotina da mudança.
+    hoje_gravado = (
+        session.scalar(
+            select(DailyCapacity.id).where(
+                DailyCapacity.student_id == student.id, DailyCapacity.day == today
+            )
+        )
+        is not None
+    )
+    ja_tem_plano = (
+        session.scalar(select(PlanVersion.id).where(PlanVersion.student_id == student.id))
+        is not None
+    )
+    if not hoje_gravado and ja_tem_plano:
+        # O /hoje já mostrou o dia calculado na hora (sem linha gravada): grava esse dia
+        # como estava antes do arquivo. Só o 1º onboarding, sem plano nenhum, calcula
+        # hoje já com o arquivo.
+        livres, leve = hoje_antes
+        session.add(
+            DailyCapacity(student_id=student.id, day=today, free_minutes=livres, light=leve)
+        )
+        session.flush()
+        if capacity_on(session, student, today) != hoje_antes:
+            student.routine_changed_on = today
+        hoje_gravado = True
+    elif hoje_gravado:
+        student.routine_changed_on = today
+    inicio = today + timedelta(days=1) if hoje_gravado else today
+    dias = rebuild_capacities(session, student, inicio, alvo.exam_date) if alvo else 0
 
     resumo = ""
     if alvo is not None:

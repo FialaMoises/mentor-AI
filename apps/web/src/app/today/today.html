@@ -1,5 +1,5 @@
 @if (offline()) {
-  <p class="aviso-offline">
+  <p class="aviso-offline" role="status">
     Sem conexão. Pode marcar à vontade — sobe sozinho quando a internet voltar.
     @if (pendentes() > 0) {
       <span>({{ pendentes() }} esperando)</span>
@@ -7,61 +7,135 @@
   </p>
 }
 
+@if (avisoFila(); as aviso) {
+  <p class="aviso-fila alert" role="status">{{ aviso }}</p>
+}
+
+<h1>Hoje</h1>
+
 @if (loading()) {
   <p class="muted">Carregando a lista de hoje…</p>
 } @else if (plan(); as day) {
-  <section class="head">
-    <h1>Hoje</h1>
-    <p class="muted">
+  @if (day.tasks.length) {
+    <p class="muted resumo-dia" aria-live="polite">
       {{ done() }} de {{ total_tarefas() }} · {{ day.capacity_minutes }} min disponíveis
       @if (day.light) {
         · dia leve
       }
     </p>
-  </section>
-
-  @if (error()) {
-    <p class="alert">{{ error() }}</p>
   }
+
+  @if (diaDaLista(); as dia) {
+    <p class="aviso-data alert" role="status">
+      Esta é a lista de {{ dia }}, guardada para abrir sem internet. A de hoje aparece quando a
+      conexão voltar.
+    </p>
+  }
+
+  <div aria-live="polite">
+    @if (error()) {
+      <p class="alert" role="alert">{{ error() }}</p>
+    }
+  </div>
 
   <ul class="tasks">
     @for (task of day.tasks; track task.id) {
-      <li class="task" [class.is-done]="task.status === 'feita'" [class.is-skipped]="task.status === 'nao_deu'">
+      <li
+        class="task"
+        [class.is-done]="task.status === 'feita'"
+        [class.is-skipped]="task.status === 'nao_deu'"
+      >
         <div class="task-main">
-          <span class="kind">{{ task.kind }}</span>
+          <span class="kind">{{ tipo(task.kind) }}</span>
           <span class="topic">{{ task.topic }}</span>
           <span class="muted">{{ task.minutes }} min</span>
+          @if (task.status !== 'pendente') {
+            <span class="selo" [class.feita]="task.status === 'feita'">
+              {{ task.status === 'feita' ? '✓ feita' : 'não deu' }}
+            </span>
+          }
         </div>
 
         @if (lancando() === task.id) {
           <div class="acertos">
             <label>
               acertei
-              <input type="number" min="0" [max]="total" [(ngModel)]="acertos" name="acertos" />
+              <input
+                type="number"
+                min="0"
+                inputmode="numeric"
+                [max]="total()"
+                [attr.aria-invalid]="erroAcertos() ? 'true' : null"
+                aria-describedby="erro-acertos"
+                [ngModel]="acertos()"
+                (ngModelChange)="acertos.set($event)"
+                name="acertos"
+              />
             </label>
             <label>
               de
-              <input type="number" min="1" max="200" [(ngModel)]="total" name="total" />
+              <input
+                type="number"
+                min="1"
+                max="200"
+                inputmode="numeric"
+                [ngModel]="total()"
+                (ngModelChange)="total.set($event)"
+                name="total"
+              />
             </label>
-            <button type="button" (click)="confirmarAcertos(task)">Salvar</button>
+            <button type="button" [disabled]="!!erroAcertos()" (click)="confirmarAcertos(task)">
+              Salvar
+            </button>
             <button type="button" class="ghost" (click)="pularAcertos(task)">Sem contar</button>
+            <p id="erro-acertos" class="erro-acertos" aria-live="polite">
+              @if (erroAcertos(); as erro) {
+                {{ erro }}
+              }
+            </p>
           </div>
         } @else {
           <div class="task-actions">
-            <button type="button" (click)="marcar(task, 'feita')" [disabled]="task.status === 'feita'">
-              Feito
-            </button>
-            <button type="button" class="ghost" (click)="marcar(task, 'nao_deu')" [disabled]="task.status === 'nao_deu'">
-              Não deu
-            </button>
+            @if (task.status !== 'feita') {
+              <button
+                type="button"
+                [attr.aria-label]="'Feito: ' + rotulo(task)"
+                (click)="marcar(task, 'feita')"
+              >
+                Feito
+              </button>
+            }
+            @if (task.status !== 'nao_deu') {
+              <button
+                type="button"
+                class="ghost"
+                [attr.aria-label]="'Não deu: ' + rotulo(task)"
+                (click)="marcar(task, 'nao_deu')"
+              >
+                Não deu
+              </button>
+            }
           </div>
         }
       </li>
     } @empty {
-      <li class="muted">Nada planejado para hoje.</li>
+      <li class="vazio">
+        @if (planoComecaDepois()) {
+          <p>
+            <strong>Seu plano começa {{ inicioDoPlano() }}.</strong> A lista de hoje fica como
+            estava quando o dia começou; o plano novo vale a partir daí.
+          </p>
+        } @else if (day.capacity_minutes <= 0) {
+          <p>Nada planejado para hoje: a sua rotina não deixa tempo de estudo neste dia.</p>
+        } @else {
+          <p>Nada planejado para hoje.</p>
+        }
+      </li>
     }
   </ul>
 } @else {
-  <p class="alert">{{ error() }}</p>
+  <div aria-live="polite">
+    <p class="alert" role="alert">{{ error() }}</p>
+  </div>
   <button type="button" (click)="load()">Tentar de novo</button>
 }

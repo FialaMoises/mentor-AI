@@ -1,5 +1,10 @@
-<form class="formulario" (submit)="enviar($event)">
-  <h2>{{ editando() ? 'Editar compromisso' : 'Novo compromisso' }}</h2>
+<form
+  class="formulario"
+  aria-labelledby="titulo-formulario"
+  (submit)="enviar($event)"
+  (keydown.escape)="cancelar.emit()"
+>
+  <h2 id="titulo-formulario">{{ editando() ? 'Editar compromisso' : 'Novo compromisso' }}</h2>
   @if (inicial()?.origem; as origem) {
     <p class="muted">veio de: {{ origem }}</p>
   }
@@ -18,6 +23,8 @@
     <input
       class="nome"
       maxlength="160"
+      name="nome"
+      autocomplete="off"
       placeholder="Musculação, leitura antes de dormir…"
       [value]="nome()"
       (input)="nome.set(valor($event))"
@@ -62,7 +69,14 @@
         }
       </div>
     } @else {
-      <input type="date" class="data" [value]="data()" (input)="data.set(valor($event))" />
+      <input
+        type="date"
+        class="data"
+        aria-label="Data"
+        [min]="minData()"
+        [value]="data()"
+        (input)="data.set(valor($event))"
+      />
     }
   </fieldset>
 
@@ -104,6 +118,7 @@
           <input
             type="date"
             class="vigencia-de"
+            [min]="minData()"
             [value]="vigenciaDe()"
             (input)="vigenciaDe.set(valor($event))"
           />
@@ -113,6 +128,7 @@
           <input
             type="date"
             class="vigencia-ate"
+            [min]="vigenciaDe() || minData()"
             [value]="vigenciaAte()"
             (input)="vigenciaAte.set(valor($event))"
           />

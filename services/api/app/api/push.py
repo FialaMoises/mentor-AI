@@ -52,6 +52,10 @@ class SyncOut(BaseModel):
     applied: int
     duplicates: int
     unknown: int
+    #: Recusadas de vez (acertos acima das questões): saem da fila, com aviso.
+    rejected: int
+    #: Mais velhas que a última marcação da tarefa: ficaram só no histórico, com aviso.
+    stale: int
 
 
 @router.get("/push/config", response_model=PushConfigOut)
@@ -125,4 +129,6 @@ def post_sync(
         applied=resultado.applied,
         duplicates=resultado.duplicates,
         unknown=resultado.unknown,
+        rejected=resultado.rejected,
+        stale=resultado.stale,
     )

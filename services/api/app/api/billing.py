@@ -39,6 +39,9 @@ class SubscriptionOut(BaseModel):
     current_period_end: date | None
     paused_until: date | None
     has_access: bool
+    #: Preço de cada plano, para a tela mostrar antes do checkout (o teste não tem preço).
+    price_monthly_cents: int
+    price_annual_cents: int
 
 
 class CheckoutIn(BaseModel):
@@ -67,6 +70,8 @@ def _out(session: Session, student: Student, today: date) -> SubscriptionOut:
         current_period_end=assinatura.current_period_end,
         paused_until=assinatura.paused_until,
         has_access=has_access(session, student, today),
+        price_monthly_cents=get_settings().price_monthly_cents,
+        price_annual_cents=get_settings().price_annual_cents,
     )
 
 

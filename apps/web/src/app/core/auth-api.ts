@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-const API = '/api/v1';
+import { API } from './api-base';
 
 export interface SessaoOut {
   token: string;
@@ -20,6 +20,10 @@ export interface EuOut {
   needs_onboarding: boolean;
   subscription_status: string;
   trial_ends_on: string | null;
+  /** Ainda falta aceitar o aviso de privacidade. */
+  consent_required: boolean;
+  /** O dia de hoje no fuso do aluno, dito pelo servidor. */
+  today: string;
 }
 
 export interface AssinaturaOut {
@@ -30,6 +34,9 @@ export interface AssinaturaOut {
   current_period_end: string | null;
   paused_until: string | null;
   has_access: boolean;
+  /** Preço de cada plano, para mostrar antes do checkout. */
+  price_monthly_cents: number;
+  price_annual_cents: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -57,10 +64,9 @@ export class AuthApi {
   }
 
   pagar(plan: 'mensal' | 'anual'): Observable<{ url: string; price_cents: number }> {
-    return this.http.post<{ url: string; price_cents: number }>(
-      `${API}/me/subscription/checkout`,
-      { plan },
-    );
+    return this.http.post<{ url: string; price_cents: number }>(`${API}/me/subscription/checkout`, {
+      plan,
+    });
   }
 
   pausar(until: string): Observable<AssinaturaOut> {

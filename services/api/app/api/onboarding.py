@@ -5,12 +5,14 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from typing import Annotated, Literal
+from zoneinfo import ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ..clock import today_in
 from ..db import get_session
 from ..deps import current_student
 from ..documents import POLICY_VERSION, has_consent, record_consent
@@ -61,6 +63,10 @@ def put_profile(
 ) -> ProfileOut:
     """O questionário preenche o aluno que já entrou pelo link mágico."""
     try:
+        hoje = today_in(payload.timezone)
+    except (ZoneInfoNotFoundError, ValueError) as erro:
+        raise HTTPException(UNPROCESSABLE, "fuso horário desconhecido") from erro
+    try:
         setup_student(
             session,
             aluno,
@@ -73,6 +79,7 @@ def put_profile(
                 for e in payload.exams
             ],
             self_assessment=payload.self_assessment,
+            today=hoje,
         )
     except OnboardingError as erro:
         raise HTTPException(UNPROCESSABLE, str(erro)) from erro

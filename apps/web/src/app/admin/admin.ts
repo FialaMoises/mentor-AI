@@ -1,20 +1,12 @@
 import { DecimalPipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
-interface Metricas {
-  students: number;
-  reached_week_three: number;
-  active_week_three: number;
-  retention_week_three: number;
-  tasks_done_last_week: number;
-  tasks_done_per_active_student: number;
-  median_minutes_to_first_plan: number | null;
-  students_logging_answers: number;
-  answer_logging_rate: number;
-  by_subscription_status: Record<string, number>;
-}
+import { AdminApi, Metricas } from '../core/admin-api';
+import { mensagemDoErro } from '../core/erro';
+import { rotuloStatusAssinatura } from '../core/rotulos';
 
 /**
  * O painel do piloto. O token fica só nesta aba: não é para deixar salvo num
@@ -27,7 +19,8 @@ interface Metricas {
   styleUrl: './admin.scss',
 })
 export class Admin {
-  private readonly http = inject(HttpClient);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly api = inject(AdminApi);
 
   protected readonly metricas = signal<Metricas | null>(null);
   protected readonly erro = signal<string | null>(null);
@@ -35,11 +28,17 @@ export class Admin {
 
   protected carregar(): void {
     this.erro.set(null);
-    this.http
-      .get<Metricas>('/api/v1/admin/metrics', { headers: { 'x-admin-token': this.token } })
+    this.api
+      .metricas(this.token)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (dados) => this.metricas.set(dados),
-        error: () => this.erro.set('Token recusado.'),
+        error: (falha: HttpErrorResponse) =>
+          this.erro.set(
+            falha.status === 403
+              ? 'Token recusado.'
+              : mensagemDoErro(falha, 'Não consegui carregar os números.'),
+          ),
       });
   }
 
@@ -48,6 +47,9 @@ export class Admin {
   }
 
   protected statusList(mapa: Record<string, number>): { nome: string; total: number }[] {
-    return Object.entries(mapa).map(([nome, total]) => ({ nome, total }));
+    return Object.entries(mapa).map(([nome, total]) => ({
+      nome: rotuloStatusAssinatura(nome),
+      total,
+    }));
   }
 }

@@ -2,16 +2,18 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { API } from './api-base';
 import { DayPlan, PlanTask, ProgressInput } from './models';
 import { MarcacaoPendente } from './offline-queue';
-
-/** Base da API. Em dev o proxy do `ng serve` manda /api para a API local. */
-const API = '/api/v1';
 
 export interface SyncResult {
   applied: number;
   duplicates: number;
   unknown: number;
+  /** Recusadas de vez pelo servidor (acertos acima das questões, por exemplo). */
+  rejected: number;
+  /** Mais velhas que a última marcação da tarefa: ficaram só no histórico. */
+  stale?: number;
 }
 
 export interface PushConfig {
@@ -33,6 +35,11 @@ export class PlanApi {
 
   sync(entries: MarcacaoPendente[]): Observable<SyncResult> {
     return this.http.post<SyncResult>(`${API}/me/progress/sync`, { entries });
+  }
+
+  /** Refaz o plano sem arquivo novo: o aluno seguiu sem enviar a rotina. */
+  replan(): Observable<{ plan_version: number; summary: string }> {
+    return this.http.post<{ plan_version: number; summary: string }>(`${API}/me/plan/replan`, {});
   }
 
   pushConfig(): Observable<PushConfig> {

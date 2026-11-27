@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-const API = '/api/v1';
+import { API } from './api-base';
 
 export type CommitmentKind = 'aula' | 'plantao' | 'academia' | 'trabalho' | 'leitura' | 'outro';
 

@@ -145,7 +145,7 @@ describe('Routine', () => {
 
     const rodapes = Array.from(el().querySelectorAll('.rodape')).map((r) => r.textContent?.trim());
     expect(rodapes[0]).toBe('estudo: 2h');
-    expect(rodapes[1]).toBe('estudo: 0');
+    expect(rodapes[1]).toBe('estudo: 0h');
     expect(rodapes[5]).toBe('dia leve');
   });
 
@@ -251,11 +251,11 @@ describe('Routine', () => {
 
     const req = http.expectOne('/api/v1/me/commitment-series/s-academia');
     expect(req.request.method).toBe('DELETE');
-    req.flush({ series_id: null, replan_summary: '12 tarefas replanejadas até 22/11.' });
+    req.flush({ series_id: null, replan_summary: 'Plano refeito de amanhã até 22/11.' });
     http.expectOne((r) => r.url === '/api/v1/me/routine').flush(semana());
     fixture.detectChanges();
 
-    expect(el().textContent).toContain('12 tarefas replanejadas até 22/11.');
+    expect(el().textContent).toContain('Plano refeito de amanhã até 22/11.');
     expect(el().querySelector('input.nome')).toBeNull();
   });
 
@@ -360,7 +360,7 @@ describe('Routine', () => {
       );
     fixture.detectChanges();
 
-    expect(el().textContent).toContain('compromisso de um dia só precisa ser de amanhã em diante');
+    expect(el().textContent).toContain('Compromisso de um dia só precisa ser de amanhã em diante.');
   });
 
   it('hora de fim calcula a duração, inclusive passando da meia-noite', () => {
@@ -386,5 +386,166 @@ describe('Routine', () => {
     expect((el().querySelector('input.fim') as HTMLInputElement).value).toBe('19:15');
     digitar('input.duracao', '90');
     expect((el().querySelector('input.fim') as HTMLInputElement).value).toBe('19:30');
+  });
+
+  it('compromissos que se sobrepõem dividem a coluna e os dois continuam clicáveis', () => {
+    const dados = semana();
+    dados.days[0].items = [
+      item({ series_id: 's-a', label: 'Enfermaria', starts_at: '07:00', duration_minutes: 360 }),
+      item({ series_id: 's-b', label: 'Ambulatório', starts_at: '12:00', duration_minutes: 120 }),
+    ];
+    montar(dados);
+
+    const blocos = Array.from(
+      el().querySelectorAll('.dia')[0].querySelectorAll('.linha-do-tempo .bloco'),
+    ) as HTMLElement[];
+    expect(blocos.length).toBe(2);
+    expect(blocos[0].style.left).not.toBe(blocos[1].style.left);
+    expect(blocos[0].style.width).toContain('50%');
+
+    blocos[1].click();
+    fixture.detectChanges();
+    expect((el().querySelector('input.nome') as HTMLInputElement).value).toBe('Musculação');
+  });
+
+  it('o pedaço depois da meia-noite também abre a edição', () => {
+    // Plantão noturno de sábado: o pedaço de domingo é o "continua".
+    const dados = semana();
+    dados.days[5].items = [
+      item({ series_id: 's-noite', kind: 'plantao', starts_at: '19:00', duration_minutes: 720 }),
+    ];
+    montar(dados);
+
+    const continua = el().querySelector('.continua') as HTMLButtonElement;
+    expect(continua.tagName).toBe('BUTTON');
+    continua.click();
+    fixture.detectChanges();
+    expect(el().querySelector('.formulario')).toBeTruthy();
+  });
+
+  it('Esc fecha o formulário e o foco volta para o + adicionar', async () => {
+    montar();
+    const adicionar = el().querySelector('button.adicionar') as HTMLButtonElement;
+    adicionar.focus();
+    adicionar.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(el().querySelector('.formulario')?.contains(document.activeElement)).toBeTrue();
+
+    const formulario = el().querySelector('.formulario') as HTMLElement;
+    formulario.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(el().querySelector('.formulario')).toBeNull();
+    expect(document.activeElement).toBe(el().querySelector('button.adicionar'));
+  });
+
+  it('datas do formulário começam amanhã', () => {
+    montar();
+    clicar('button.adicionar');
+    (el().querySelector('details.mais') as HTMLDetailsElement).open = true;
+    fixture.detectChanges();
+
+    expect((el().querySelector('input.vigencia-de') as HTMLInputElement).min).toBe('2026-09-29');
+    clicar('input[value=unica]');
+    expect((el().querySelector('input.data') as HTMLInputElement).min).toBe('2026-09-29');
+  });
+
+  it('bloco que não dá para editar explica por quê', () => {
+    const dados = semana();
+    dados.days[0].items = [item({ editable: false, series: null })];
+    montar(dados);
+    clicar('.bloco.academia');
+
+    expect(el().querySelector('.resumo')?.textContent).toContain('não dá para mudar');
+  });
+
+  it('dois cliques rápidos em próxima andam duas semanas e a resposta velha é descartada', () => {
+    montar();
+    clicar('button.proxima');
+    clicar('button.proxima');
+
+    const pedidos = http.match((r) => r.url === '/api/v1/me/routine');
+    expect(pedidos.length).toBe(2);
+    expect(pedidos[0].cancelled).toBeTrue();
+    expect(pedidos[1].request.params.get('week')).toBe('2026-10-12');
+    const daqui2 = semana();
+    daqui2.week_start = '2026-10-12';
+    pedidos[1].flush(daqui2);
+    fixture.detectChanges();
+
+    expect(el().querySelector('.periodo')?.textContent).toContain('12/10');
+  });
+
+  it('as abas dizem qual dia está aberto', () => {
+    montar();
+
+    const abas = Array.from(el().querySelectorAll('.aba')) as HTMLElement[];
+    expect(abas[0].getAttribute('aria-pressed')).toBe('true');
+    expect(abas[1].getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('o nome do dia é um h2 e o chip sem horário tem o nome inteiro no title', () => {
+    const dados = semana();
+    dados.days[1].items = [item({ starts_at: null, label: 'Musculação com o personal' })];
+    montar(dados);
+
+    expect(el().querySelector('h2.dia-nome')).toBeTruthy();
+    const chip = el().querySelector('.chip') as HTMLElement;
+    expect(chip.getAttribute('title')).toContain('Musculação com o personal');
+  });
+
+  it('depois de um erro ao carregar a semana, próxima ainda carrega', () => {
+    montar();
+    clicar('button.proxima');
+    http
+      .expectOne((r) => r.url === '/api/v1/me/routine')
+      .error(new ProgressEvent('error'), { status: 0 });
+    fixture.detectChanges();
+    expect(el().querySelector('.alert')?.textContent).toContain('Sem conexão');
+
+    clicar('button.proxima');
+    const req = http.expectOne((r) => r.url === '/api/v1/me/routine');
+    expect(req.request.params.get('week')).toBe('2026-10-05');
+    const seguinte = semana();
+    seguinte.week_start = '2026-10-05';
+    req.flush(seguinte);
+    fixture.detectChanges();
+
+    expect(el().querySelector('.periodo')?.textContent).toContain('05/10');
+    expect(el().querySelector('.alert')).toBeNull();
+  });
+
+  it('salvar depois de um erro de carregamento recarrega a semana', () => {
+    montar();
+    clicar('button.proxima');
+    http
+      .expectOne((r) => r.url === '/api/v1/me/routine')
+      .flush({}, { status: 500, statusText: 'erro' });
+    fixture.detectChanges();
+
+    clicar('.bloco.academia');
+    clicar('button.salvar');
+    http
+      .expectOne('/api/v1/me/commitment-series/s-academia')
+      .flush({ series_id: 's-academia', replan_summary: 'ok' });
+
+    http.expectOne((r) => r.url === '/api/v1/me/routine').flush(semana());
+  });
+
+  it('a faixa sem horário tem a mesma altura na coluna de horas e na do dia', () => {
+    const dados = semana();
+    dados.days[0].items = [
+      item({ starts_at: null, label: 'Leitura livre' }),
+      ...dados.days[0].items,
+    ];
+    montar(dados);
+
+    const horas = el().querySelector('.horas .sem-horario') as HTMLElement;
+    const dia = el().querySelector('.dia .sem-horario') as HTMLElement;
+    expect(horas.style.getPropertyValue('--chips')).toBe('1');
+    expect(horas.getBoundingClientRect().height).toBe(dia.getBoundingClientRect().height);
   });
 });

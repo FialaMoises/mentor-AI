@@ -1,9 +1,15 @@
 {
-  "name": "web",
-  "short_name": "web",
+  "id": "/",
+  "name": "mentor-AI",
+  "short_name": "mentor-AI",
+  "description": "Seu checklist diário de estudos para a residência, ajustado à sua rotina.",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "display": "standalone",
   "scope": "./",
-  "start_url": "./",
+  "start_url": "./hoje",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
   "icons": [
     {
       "src": "icons/icon-72x72.png",

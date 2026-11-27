@@ -1,17 +1,12 @@
 :host {
-  --aula: #4a7bd8;
-  --plantao: #c0504d;
-  --academia: #2f8a5d;
-  --leitura: #7b5cc0;
-  --trabalho: #c27a1e;
-  --outro: #667085;
+  /* Texto branco sobre cada cor: de 5,4:1 a 6,4:1 (AA para texto pequeno). */
+  --aula: #2f5fb8;
+  --plantao: #b23c39;
+  --academia: #23704a;
+  --leitura: #6b4cb0;
+  --trabalho: #8f5a12;
+  --outro: #5d6b82;
   display: block;
-}
-
-.cabeca h1 {
-  margin: 0.5rem 0 0.25rem;
-  font-size: 1.6rem;
-  letter-spacing: -0.02em;
 }
 
 .muted {
@@ -55,17 +50,19 @@
 
 .aba {
   flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
   padding: 0.4rem 0;
-  border: 1px solid var(--line);
-  border-radius: 0.4rem;
+  border-color: var(--control);
   background: var(--bg);
   color: var(--fg);
-  font: inherit;
   font-size: 0.85rem;
 }
 
-.aba.atual {
+.aba.atual,
+.aba.atual:hover {
   background: var(--accent);
+  border-color: var(--accent);
   color: var(--accent-fg);
 }
 
@@ -79,7 +76,7 @@
 .dia-nome {
   height: 1.6rem;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-align: center;
 }
@@ -88,10 +85,18 @@
   text-decoration: underline;
 }
 
+/* A faixa "sem horário" tem a mesma altura nas duas colunas: N chips de --chip-h. */
+.grade {
+  --chip-h: 1.6rem;
+  --chip-gap: 0.15rem;
+}
+
 .sem-horario {
+  --chips: 0;
   display: grid;
   align-content: start;
-  gap: 0.15rem;
+  gap: var(--chip-gap);
+  height: calc(var(--chips) * (var(--chip-h) + var(--chip-gap)));
 }
 
 .linha-do-tempo {
@@ -104,10 +109,20 @@
   background: none;
 }
 
+.horas .sem-horario.com-itens::before {
+  content: 'sem horário';
+  display: block;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  text-align: right;
+  padding-right: 0.25rem;
+  color: var(--muted);
+}
+
 .hora {
   position: absolute;
   right: 0.25rem;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: var(--muted);
   transform: translateY(-0.3rem);
 }
@@ -116,14 +131,15 @@
 .continua {
   position: absolute;
   left: 2px;
-  right: 2px;
+  width: calc(100% - 4px);
+  min-height: 0;
   overflow: hidden;
   padding: 0.1rem 0.25rem;
   border: 0;
   border-radius: 0.3rem;
   color: #fff;
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   line-height: 1.2;
   text-align: left;
   display: flex;
@@ -134,45 +150,63 @@
 .bloco.chip {
   position: static;
   display: block;
+  height: var(--chip-h);
+  min-height: 0;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.bloco.travado {
-  cursor: default;
-  opacity: 0.75;
+/* Sem opacidade: o contraste fica, e o estado vai no traço. */
+.bloco.travado,
+.continua.travado {
+  cursor: help;
+  outline: 2px dashed var(--bg);
+  outline-offset: -4px;
 }
 
 .continua {
-  opacity: 0.7;
-  cursor: default;
+  border-top: 2px dashed rgba(255, 255, 255, 0.85);
 }
 
 @each $tipo in aula, plantao, academia, leitura, trabalho, outro {
   .bloco.#{$tipo},
-  .continua.#{$tipo} {
+  .continua.#{$tipo},
+  .bloco.#{$tipo}:hover,
+  .continua.#{$tipo}:hover {
     background: var(--#{$tipo});
   }
 }
 
+.bloco:hover:not(.travado),
+.continua:hover:not(.travado) {
+  filter: brightness(1.12);
+}
+
+.bloco:focus-visible,
+.continua:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
 .rodape {
   margin: 0.25rem 0 0;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   text-align: center;
-  color: var(--academia);
+  color: var(--ok-fg);
 }
 
 .rodape.zero {
-  color: var(--plantao);
+  color: var(--bad-fg);
 }
 
 .rodape.leve {
-  color: var(--trabalho);
+  color: var(--warn-fg);
 }
 
 .nota {
   margin: 0;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   text-align: center;
   color: var(--muted);
 }
@@ -195,25 +229,34 @@
   .continua {
     font-size: 0.8rem;
   }
+
+  .grade {
+    --chip-h: var(--touch);
+  }
 }
 
-.barra button {
-  font: inherit;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--line);
-  background: var(--accent);
-  color: var(--accent-fg);
-  cursor: pointer;
+/* Lista do dia: o mesmo conteúdo da grade, com alvos de toque inteiros no celular. */
+.lista-dia {
+  display: none;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.barra button.ghost {
-  background: transparent;
-  color: inherit;
+.lista-dia button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .barra a {
-  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  color: var(--fg);
 }
 
 @media (max-width: 767px) {
@@ -221,5 +264,11 @@
     flex-direction: row;
     flex-wrap: wrap;
     column-gap: 0.4rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .lista-dia {
+    display: grid;
   }
 }

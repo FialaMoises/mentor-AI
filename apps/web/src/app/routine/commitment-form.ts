@@ -1,5 +1,16 @@
-import { Component, OnInit, computed, input, output, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnInit,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 
+import { duracaoEntre, fimDe } from '../core/horario';
 import { CommitmentKind, SeriesInput } from '../core/routine-api';
 
 export const TIPOS: { valor: CommitmentKind; nome: string }[] = [
@@ -24,10 +35,14 @@ export interface FormInicial {
   templateUrl: './commitment-form.html',
   styleUrl: './commitment-form.scss',
 })
-export class CommitmentForm implements OnInit {
+export class CommitmentForm implements OnInit, AfterViewInit {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
   readonly inicial = input<FormInicial | null>(null);
   readonly salvando = input(false);
   readonly online = input(true);
+  /** A data mínima dos campos de data ("AAAA-MM-DD"): amanhã. */
+  readonly minData = input('');
 
   readonly salvar = output<SeriesInput>();
   readonly apagar = output<void>();
@@ -49,10 +64,7 @@ export class CommitmentForm implements OnInit {
   /** Hora de fim, derivada de início + duração (passa da meia-noite se preciso). */
   protected readonly fim = computed(() => {
     const inicio = this.inicio();
-    if (!inicio) return '';
-    const [h, m] = inicio.split(':').map(Number);
-    const total = (h * 60 + m + this.duracao()) % (24 * 60);
-    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+    return inicio ? fimDe(inicio, this.duracao()) : '';
   });
 
   protected readonly editando = computed(() => this.inicial() !== null);
@@ -78,6 +90,11 @@ export class CommitmentForm implements OnInit {
     this.vigenciaAte.set(inicial.ends_on ?? '');
   }
 
+  /** Abrir o formulário leva o foco para o primeiro campo. */
+  ngAfterViewInit(): void {
+    this.host.nativeElement.querySelector<HTMLElement>('select.tipo')?.focus();
+  }
+
   protected valor(evento: Event): string {
     return (evento.target as HTMLInputElement).value;
   }
@@ -86,11 +103,7 @@ export class CommitmentForm implements OnInit {
   protected mudarFim(valor: string): void {
     const inicio = this.inicio();
     if (!inicio || !valor) return;
-    const [hi, mi] = inicio.split(':').map(Number);
-    const [hf, mf] = valor.split(':').map(Number);
-    let duracao = hf * 60 + mf - (hi * 60 + mi);
-    if (duracao <= 0) duracao += 24 * 60;
-    this.duracao.set(duracao);
+    this.duracao.set(duracaoEntre(inicio, valor));
   }
 
   protected alternarDia(indice: number): void {

@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.auth import request_login
 from app.catalog import load as load_catalog
+from app.clock import today_in
 from app.extraction import FakeExtractor
-from app.models import Consent, Document, Student, TargetExam
+from app.models import Consent, Document, Proficiency, Student, TargetExam
 from app.storage import InMemoryStore
 
 PROVA = (date.today() + timedelta(days=150)).isoformat()
@@ -258,3 +259,83 @@ def test_um_aluno_por_email(client: TestClient, session: Session) -> None:
 
     alunos = list(session.scalars(select(Student).where(Student.email == "mesmo@exemplo.com")))
     assert len(alunos) == 1
+
+
+def test_refazer_o_questionario_guarda_os_acertos_e_a_prova_do_arquivo(
+    client: TestClient, session: Session, api_provider: FakeExtractor
+) -> None:
+    cabecalho = entrar(client, session)
+    client.put("/api/v1/me/profile", json=QUESTIONARIO, headers=cabecalho)
+    client.post("/api/v1/me/consent", headers=cabecalho)
+    prova_do_arquivo = (date.today() + timedelta(days=60)).isoformat()
+    rotina = {**ROTINA, "exams": [{"name": "Prova da faculdade", "exam_date": prova_do_arquivo}]}
+    api_provider.payload = rotina
+    documento = client.post(
+        "/api/v1/me/documents",
+        files={"file": ("grade.pdf", PDF, "application/pdf")},
+        data={"kind": "grade"},
+        headers=cabecalho,
+    ).json()
+    client.post(f"/api/v1/documents/{documento['id']}/confirm", json=rotina, headers=cabecalho)
+    linha = session.scalars(select(Proficiency).where(Proficiency.answered == 0)).first()
+    assert linha is not None
+    linha.answered, linha.correct = 40, 30
+    session.commit()
+
+    outro = {**QUESTIONARIO, "self_assessment": {"clinica-medica": 0.9, "pediatria": 0.2}}
+    assert client.put("/api/v1/me/profile", json=outro, headers=cabecalho).status_code == 200
+
+    session.expire_all()
+    depois = session.get(Proficiency, linha.id)
+    assert depois is not None
+    assert (depois.answered, depois.correct) == (40, 30)
+    nomes = sorted(p.name for p in session.scalars(select(TargetExam)))
+    assert nomes == ["ENAMED", "Prova da faculdade"]
+    principais = [p.name for p in session.scalars(select(TargetExam)) if p.is_primary]
+    assert principais == ["ENAMED"]
+
+
+def test_prova_principal_no_passado_ou_hoje_e_recusada(
+    client: TestClient, session: Session
+) -> None:
+    cabecalho = entrar(client, session)
+    for dia in (date.today() - timedelta(days=300), date.today()):
+        payload = {
+            **QUESTIONARIO,
+            "exams": [{"name": "ENAMED", "exam_date": dia.isoformat(), "is_primary": True}],
+        }
+
+        resposta = client.put("/api/v1/me/profile", json=payload, headers=cabecalho)
+
+        assert resposta.status_code == 422
+        assert "data da prova" in resposta.json()["detail"]
+
+
+def test_eu_diz_se_o_aviso_de_privacidade_ja_foi_aceito(
+    client: TestClient, session: Session
+) -> None:
+    cabecalho = entrar(client, session)
+    client.put("/api/v1/me/profile", json=QUESTIONARIO, headers=cabecalho)
+
+    antes = client.get("/api/v1/me", headers=cabecalho).json()
+    client.post("/api/v1/me/consent", headers=cabecalho)
+    depois = client.get("/api/v1/me", headers=cabecalho).json()
+
+    assert (antes["consent_required"], depois["consent_required"]) == (True, False)
+
+
+def test_fuso_desconhecido_e_recusado(client: TestClient, session: Session) -> None:
+    cabecalho = entrar(client, session)
+    payload = {**QUESTIONARIO, "timezone": "Lua/Base"}
+
+    assert client.put("/api/v1/me/profile", json=payload, headers=cabecalho).status_code == 422
+
+
+def test_eu_traz_o_dia_de_hoje_do_aluno(client: TestClient, session: Session) -> None:
+    """A conferência compara datas com o dia do servidor, não com o relógio do navegador."""
+    cabecalho = entrar(client, session)
+    client.put("/api/v1/me/profile", json=QUESTIONARIO, headers=cabecalho)
+
+    corpo = client.get("/api/v1/me", headers=cabecalho).json()
+
+    assert corpo["today"] == today_in("America/Fortaleza").isoformat()

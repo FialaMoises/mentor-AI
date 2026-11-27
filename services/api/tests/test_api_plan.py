@@ -4,12 +4,13 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import delete as sql_delete
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.clock import today_in
 from app.config import get_settings
-from app.models import Proficiency, ProgressEvent, Student, Task
+from app.models import DailyCapacity, Proficiency, ProgressEvent, Student, Task
 from app.seed import SEED_STUDENT_ID
 from app.seed import run as seed
 
@@ -152,3 +153,42 @@ def test_seed_rodado_duas_vezes_nao_duplica_o_dia(session: Session, aluno: Stude
     session.commit()
 
     assert len(list(session.scalars(select(Task)))) == primeiro
+
+
+def test_dia_sem_capacidade_gravada_calcula_na_hora_sem_gravar(
+    client: TestClient,
+    session: Session,
+    aluno: Student,
+    login,  # type: ignore[no-untyped-def]
+) -> None:
+    """Depois de "Seguir sem arquivo" não há linha de hoje: o dia não é zero, é o orçamento."""
+    session.execute(sql_delete(DailyCapacity).where(DailyCapacity.student_id == aluno.id))
+    session.commit()
+
+    corpo = client.get("/api/v1/me/plan/today", headers=login(aluno)).json()
+
+    assert corpo["capacity_minutes"] > 0
+    session.expire_all()
+    assert not list(
+        session.scalars(select(DailyCapacity).where(DailyCapacity.student_id == aluno.id))
+    )
+
+
+def test_lista_do_dia_diz_quando_o_plano_comeca(
+    client: TestClient,
+    session: Session,
+    aluno: Student,
+    login,  # type: ignore[no-untyped-def]
+) -> None:
+    cabecalho = login(aluno)
+    assert client.get("/api/v1/me/plan/today", headers=cabecalho).json()["plan_starts_on"] == (
+        HOJE.isoformat()
+    )
+
+    # Plano novo que só tem tarefas de amanhã em diante: é o primeiro dia do aluno.
+    session.execute(sql_delete(Task).where(Task.student_id == aluno.id, Task.day <= HOJE))
+    session.commit()
+    corpo = client.get("/api/v1/me/plan/today", headers=cabecalho).json()
+
+    assert corpo["tasks"] == []
+    assert corpo["plan_starts_on"] > HOJE.isoformat()

@@ -1,9 +1,3 @@
-h1 {
-  margin: 0.5rem 0 0.25rem;
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
-}
-
 h2 {
   margin: 2rem 0 0.4rem;
   font-size: 1.05rem;
@@ -12,13 +6,6 @@ h2 {
 .muted {
   color: var(--muted);
   margin: 0.25rem 0;
-}
-
-.alert {
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.5rem;
-  background: var(--alert-bg);
-  color: var(--alert-fg);
 }
 
 .cartao {
@@ -30,10 +17,6 @@ h2 {
 
 .status {
   margin: 0;
-}
-
-.status strong {
-  text-transform: capitalize;
 }
 
 .campo {
@@ -51,35 +34,24 @@ h2 {
   margin: 0.6rem 0;
 }
 
-input {
-  font: inherit;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  background: transparent;
-  color: inherit;
-}
-
-button {
-  font: inherit;
-  padding: 0.5rem 0.9rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--line);
-  background: var(--accent);
-  color: var(--accent-fg);
-  cursor: pointer;
-}
-
-button.ghost {
-  background: transparent;
-  color: inherit;
-}
-
 button.perigo {
   color: var(--alert-fg);
 }
 
-button:disabled {
-  opacity: 0.45;
-  cursor: default;
+.confirmacao {
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.7rem;
+  background: var(--alert-bg);
+  color: var(--alert-fg);
+}
+
+.confirmacao p {
+  margin: 0 0 0.5rem;
+}
+
+button.perigo-cheio {
+  background: var(--alert-fg);
+  color: var(--bg);
+  border-color: var(--alert-fg);
 }

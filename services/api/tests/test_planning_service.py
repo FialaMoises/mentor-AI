@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
+from sqlalchemy import delete as sql_delete
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -73,7 +74,34 @@ def test_cada_replanejamento_gera_uma_versao_com_resumo(session: Session, aluno:
     assert len(versoes) == 2  # a do seed e a do replanejamento
     assert resultado.version.number == 2
     assert resultado.version.reason == "replanejamento"
-    assert "replanejadas" in resultado.version.summary
+    assert resultado.version.summary.startswith("Plano refeito de amanhã até ")
+
+
+def test_primeiro_plano_diz_montado_e_nao_refeito(session: Session, aluno: Student) -> None:
+    session.execute(sql_delete(Task).where(Task.student_id == aluno.id))
+    session.execute(sql_delete(PlanVersion).where(PlanVersion.student_id == aluno.id))
+    session.flush()
+
+    resultado = replan(session, aluno, HOJE, params=PARAMS)
+
+    assert resultado.version.summary.startswith("Plano montado de amanhã até ")
+
+
+def test_resumo_nao_conta_o_que_so_trocou_de_linha(session: Session, aluno: Student) -> None:
+    replan(session, aluno, HOJE, params=PARAMS)
+    session.flush()
+
+    segundo = replan(session, aluno, HOJE, params=PARAMS)
+
+    alvo = session.scalar(
+        select(TargetExam).where(TargetExam.student_id == aluno.id, TargetExam.is_primary)
+    )
+    assert alvo is not None
+    assert segundo.removed > 0
+    resumo = segundo.version.summary
+    assert "saíram do lugar antigo" not in resumo
+    assert "tarefas" not in resumo
+    assert resumo.startswith(f"Plano refeito de amanhã até {alvo.exam_date:%d/%m}")
 
 
 def test_tarefa_feita_no_futuro_sobrevive_ao_replanejamento(

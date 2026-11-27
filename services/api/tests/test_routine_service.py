@@ -442,6 +442,8 @@ def test_changed_today_vem_da_ultima_edicao_e_nao_da_vigencia_do_arquivo(
 ) -> None:
     """Rodízio de arquivo que termina hoje não é mudança do aluno."""
     _bloco_de_arquivo(session, aluno)
+    # A confirmação do arquivo é uma mudança de hoje; aqui só interessa a vigência.
+    aluno.routine_changed_on = None
     for compromisso in session.scalars(select(Commitment).where(Commitment.student_id == aluno.id)):
         compromisso.ends_on = HOJE
     session.flush()

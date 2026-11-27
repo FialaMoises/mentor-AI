@@ -1,4 +1,6 @@
 .passos {
+  list-style: none;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -12,12 +14,6 @@
   font-weight: 650;
 }
 
-h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
-}
-
 h2 {
   margin: 1.75rem 0 0.25rem;
   font-size: 1.05rem;
@@ -26,14 +22,6 @@ h2 {
 .muted {
   color: var(--muted);
   margin: 0 0 1rem;
-}
-
-.alert {
-  margin: 0.75rem 0;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.5rem;
-  background: var(--alert-bg);
-  color: var(--alert-fg);
 }
 
 .campo {
@@ -51,16 +39,6 @@ h2 {
 .campo.nota input[type='range'] {
   flex: 1;
   min-width: 8rem;
-}
-
-input,
-select {
-  font: inherit;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  background: transparent;
-  color: inherit;
 }
 
 ul {
@@ -94,24 +72,132 @@ ul {
   width: 5.5rem;
 }
 
-button {
-  font: inherit;
-  margin-top: 1rem;
-  padding: 0.5rem 0.9rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--line);
+.campo .slider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 10rem;
+}
+
+.campo .slider input[type='range'] {
+  flex: 1;
+}
+
+.campo .slider output {
+  min-width: 2.2rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.enviar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.enviar .muted {
+  margin: 1rem 0 0;
+}
+
+.upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.upload button {
+  margin: 0;
+}
+
+/* O input nativo some da vista, mas continua no teclado e no leitor de tela pelo label. */
+.arquivo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.botao-arquivo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: var(--radius, 0.5rem);
   background: var(--accent);
   color: var(--accent-fg);
   cursor: pointer;
 }
 
-button.ghost {
-  margin: 0;
-  background: transparent;
+.arquivo:focus-visible + .botao-arquivo {
+  outline: 2px solid var(--focus, currentColor);
+  outline-offset: 2px;
+}
+
+.botao-arquivo.desabilitado {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Celular: rótulo sempre acima do campo, e o valor da nota junto do slider. */
+@media (max-width: 767px) {
+  .campo {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  .campo > span {
+    min-width: 0;
+  }
+}
+
+/* Telas largas: duas colunas fixas, todos os campos começam no mesmo x. */
+@media (min-width: 768px) {
+  .campo {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+
+  .campo > span {
+    min-width: 0;
+  }
+}
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.passou {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 0.5rem;
+  border: 1px solid var(--control);
+  border-radius: 999px;
   color: var(--muted);
 }
 
-button:disabled {
-  opacity: 0.45;
-  cursor: default;
+.compromissos li.descartado strong {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+/* O "min" na mesma linha de base do campo de duração. */
+.compromissos .unidade {
+  align-self: center;
+  margin: 0;
+}
+
+/* Duração e "min" andam juntos: não se separam quando a linha quebra (LAY-54). */
+.compromissos .duracao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
 }

@@ -15,11 +15,17 @@ class PlanTaskOut(BaseModel):
     status: Literal["pendente", "feita", "nao_deu"]
 
 
+#: O campo `date` de DayPlanOut esconde o tipo; este apelido evita a sombra.
+Day = date
+
+
 class DayPlanOut(BaseModel):
     date: date
     capacity_minutes: int
     light: bool
     plan_version: int
+    #: Primeiro dia com tarefa no plano do aluno; depois de hoje = o plano ainda não começou.
+    plan_starts_on: Day | None = None
     tasks: list[PlanTaskOut]
 
 
